@@ -16,6 +16,8 @@ class ProductVariant extends Model
         'sku',
         'price',
         'cost',
+        'is_default',
+        'is_active',
     ];
 
     protected function casts(): array
@@ -23,6 +25,8 @@ class ProductVariant extends Model
         return [
             'price' => 'decimal:2',
             'cost' => 'decimal:2',
+            'is_default' => 'boolean',
+            'is_active' => 'boolean',
             'deleted_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

@@ -139,6 +139,8 @@ return new class extends Migration
             $table->string('sku', 50)->nullable();
             $table->decimal('price', 12, 2);
             $table->decimal('cost', 12, 2)->default(0);
+            $table->boolean('is_default')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->timestampTz('deleted_at')->nullable();
             $table->timestampsTz();
             $table->index('sku');
