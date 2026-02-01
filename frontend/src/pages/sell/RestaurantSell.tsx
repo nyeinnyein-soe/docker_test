@@ -90,8 +90,6 @@ export default function RestaurantSell() {
   }
 
   const handleTableSelect = async (table: Table) => {
-    setSelectedTable(table)
-
     if (table.status === 'AVAILABLE') {
       // Open new session
       try {
@@ -101,6 +99,18 @@ export default function RestaurantSell() {
         })
         const session = response.data.data || response.data
         if (session) {
+          // Update selectedTable with the new active_session
+          setSelectedTable({
+            ...table,
+            status: 'OCCUPIED',
+            active_session: {
+              id: session.id,
+              uuid: session.uuid,
+              table_id: table.id,
+              status: 'ACTIVE',
+              guest_count: guestCount,
+            },
+          })
           setTableSession(session.id)
           setCurrentSessionId(session.id)
           setOrderType('DINE_IN')
@@ -113,6 +123,7 @@ export default function RestaurantSell() {
       }
     } else if (table.active_session) {
       // Continue existing session
+      setSelectedTable(table)
       setTableSession(table.active_session.id)
       setCurrentSessionId(table.active_session.id)
       setOrderType('DINE_IN')
@@ -214,12 +225,14 @@ export default function RestaurantSell() {
         await api.put(`/floor/sessions/${selectedTable.active_session.uuid}/close`)
       }
 
+      // Refresh floor data before showing floor view
+      await fetchFloors()
+      
       clearCart()
       setView('floor')
       setSelectedTable(null)
       setCurrentSessionId(null)
       setShowPayment(false)
-      fetchFloors()
     } catch (error) {
       console.error('Payment failed:', error)
       throw error

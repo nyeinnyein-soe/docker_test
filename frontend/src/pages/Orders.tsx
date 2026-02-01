@@ -54,6 +54,37 @@ export default function Orders() {
         amount: parseFloat(selectedOrder.grand_total),
       })
 
+      // If this is a DINE_IN order with a table session, check if we should close the session
+      if (selectedOrder.type === 'DINE_IN' && selectedOrder.table_session_id) {
+        // Check if there are any remaining unpaid orders for this session
+        const ordersResponse = await api.get('/orders')
+        const sessionOrders = (ordersResponse.data.data || []).filter(
+          (order: Order) =>
+            order.table_session_id === selectedOrder.table_session_id &&
+            order.payment_status !== 'PAID' &&
+            order.uuid !== selectedOrder.uuid // Exclude current order (just paid)
+        )
+
+        // If no more unpaid orders, close the table session
+        if (sessionOrders.length === 0) {
+          try {
+            // Get table session UUID from the floor data
+            const floorResponse = await api.get('/floor')
+            const floors = floorResponse.data.data || []
+            for (const floor of floors) {
+              for (const table of floor.tables || []) {
+                if (table.active_session?.id === selectedOrder.table_session_id) {
+                  await api.put(`/floor/sessions/${table.active_session.uuid}/close`)
+                  break
+                }
+              }
+            }
+          } catch (sessionError) {
+            console.error('Failed to close table session:', sessionError)
+          }
+        }
+      }
+
       setShowPayment(false)
       fetchOrders()
       // Refresh selected order
