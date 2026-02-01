@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Plus, Edit, Trash2, X, Save, Loader2, ArrowLeft } from 'lucide-react'
+import ConfirmModal from '@/components/common/ConfirmModal'
 import api from '@/lib/api'
 import type { Category } from '@/types'
 
@@ -23,6 +24,8 @@ export default function Categories() {
     color_hex: '#CCCCCC',
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
 
   useEffect(() => {
     fetchCategories()
@@ -58,11 +61,18 @@ export default function Categories() {
     setShowForm(true)
   }
 
-  const handleDeleteCategory = async (category: Category) => {
-    if (!confirm(`Delete category "${category.name}"? Products in this category will not be deleted.`)) return
+  const handleDeleteCategory = (category: Category) => {
+    setCategoryToDelete(category)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return
 
     try {
-      await api.delete(`/categories/${category.id}`)
+      await api.delete(`/categories/${categoryToDelete.id}`)
+      setShowDeleteConfirm(false)
+      setCategoryToDelete(null)
       fetchCategories()
     } catch (error) {
       console.error('Failed to delete category:', error)
@@ -234,6 +244,21 @@ export default function Categories() {
           </Card>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        open={showDeleteConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteConfirm(open)
+          if (!open) setCategoryToDelete(null)
+        }}
+        title="Delete Category"
+        description={`Are you sure you want to delete "${categoryToDelete?.name}"? Products in this category will not be deleted.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteCategory}
+      />
     </div>
   )
 }

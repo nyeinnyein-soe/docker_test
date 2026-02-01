@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, cn } from '@/lib/utils'
 import { Search, Plus, Edit, Trash2, X, Save, Loader2, Layers, FolderTree, Sliders, Check } from 'lucide-react'
+import ConfirmModal from '@/components/common/ConfirmModal'
+import AlertModal from '@/components/common/AlertModal'
 import api from '@/lib/api'
 import type { Category, Product, ProductVariant, TaxGroup } from '@/types'
 
@@ -49,6 +51,18 @@ export default function Items() {
     cost: '',
   })
   const [isSavingVariant, setIsSavingVariant] = useState(false)
+  
+  // Modal states
+  const [showDeleteProductConfirm, setShowDeleteProductConfirm] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const [showDeleteVariantConfirm, setShowDeleteVariantConfirm] = useState(false)
+  const [variantToDelete, setVariantToDelete] = useState<ProductVariant | null>(null)
+  const [alertModal, setAlertModal] = useState<{ open: boolean; title: string; message: string; variant: 'error' | 'success' | 'info' }>({
+    open: false,
+    title: '',
+    message: '',
+    variant: 'error',
+  })
 
   useEffect(() => {
     fetchMenu()
@@ -75,7 +89,12 @@ export default function Items() {
     } catch (error: any) {
       console.error('Failed to fetch menu:', error)
       const errorMessage = error?.response?.data?.message || 'Failed to load menu items'
-      alert(`${errorMessage}. Please refresh the page.`)
+      setAlertModal({
+        open: true,
+        title: 'Loading Error',
+        message: `${errorMessage}. Please refresh the page.`,
+        variant: 'error',
+      })
     } finally {
       setIsLoading(false)
     }
@@ -139,14 +158,27 @@ export default function Items() {
     }
   }
 
-  const handleDeleteProduct = async (product: Product) => {
-    if (!confirm(`Delete "${product.name}"?`)) return
+  const handleDeleteProduct = (product: Product) => {
+    setProductToDelete(product)
+    setShowDeleteProductConfirm(true)
+  }
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return
 
     try {
-      await api.delete(`/products/${product.id}`)
+      await api.delete(`/products/${productToDelete.id}`)
+      setShowDeleteProductConfirm(false)
+      setProductToDelete(null)
       fetchMenu()
     } catch (error) {
       console.error('Failed to delete product:', error)
+      setAlertModal({
+        open: true,
+        title: 'Delete Failed',
+        message: 'Failed to delete product. Please try again.',
+        variant: 'error',
+      })
     }
   }
 
@@ -209,14 +241,27 @@ export default function Items() {
     setShowVariantForm(true)
   }
 
-  const handleDeleteVariant = async (variant: ProductVariant) => {
-    if (!confirm(`Delete variant "${variant.name}"?`)) return
+  const handleDeleteVariant = (variant: ProductVariant) => {
+    setVariantToDelete(variant)
+    setShowDeleteVariantConfirm(true)
+  }
+
+  const confirmDeleteVariant = async () => {
+    if (!variantToDelete) return
     try {
-      await api.delete(`/variants/${variant.id}`)
-      setProductVariants(productVariants.filter((v) => v.id !== variant.id))
+      await api.delete(`/variants/${variantToDelete.id}`)
+      setProductVariants(productVariants.filter((v) => v.id !== variantToDelete.id))
+      setShowDeleteVariantConfirm(false)
+      setVariantToDelete(null)
       fetchMenu()
     } catch (error) {
       console.error('Failed to delete variant:', error)
+      setAlertModal({
+        open: true,
+        title: 'Delete Failed',
+        message: 'Failed to delete variant. Please try again.',
+        variant: 'error',
+      })
     }
   }
 
@@ -272,7 +317,12 @@ export default function Items() {
         fetchMenu()
       }).catch(error => {
         console.error('Failed to update modifiers:', error)
-        alert(error?.response?.data?.message || 'Failed to update modifiers. Please try again.')
+        setAlertModal({
+          open: true,
+          title: 'Update Failed',
+          message: error?.response?.data?.message || 'Failed to update modifiers. Please try again.',
+          variant: 'error',
+        })
         // Refresh from server to restore correct state
         api.get(`/products/${editingProduct.id}`).then(res => {
           const actualGroups = (res.data.data.modifier_groups || []).map((g: any) => g.id)
@@ -838,6 +888,45 @@ export default function Items() {
           </Card>
         </div>
       )}
+
+      {/* Delete Product Confirmation Modal */}
+      <ConfirmModal
+        open={showDeleteProductConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteProductConfirm(open)
+          if (!open) setProductToDelete(null)
+        }}
+        title="Delete Product"
+        description={`Are you sure you want to delete "${productToDelete?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteProduct}
+      />
+
+      {/* Delete Variant Confirmation Modal */}
+      <ConfirmModal
+        open={showDeleteVariantConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteVariantConfirm(open)
+          if (!open) setVariantToDelete(null)
+        }}
+        title="Delete Variant"
+        description={`Are you sure you want to delete variant "${variantToDelete?.name}"?`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteVariant}
+      />
+
+      {/* Alert Modal */}
+      <AlertModal
+        open={alertModal.open}
+        onOpenChange={(open) => setAlertModal({ ...alertModal, open })}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant={alertModal.variant}
+      />
     </div>
   )
 }

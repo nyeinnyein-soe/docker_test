@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, Edit, Trash2, X, Save, Loader2, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react'
+import ConfirmModal from '@/components/common/ConfirmModal'
 import api from '@/lib/api'
 
 interface ModifierGroup {
@@ -44,6 +45,10 @@ export default function Modifiers() {
     cost_extra: '',
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false)
+  const [groupToDelete, setGroupToDelete] = useState<ModifierGroup | null>(null)
+  const [showDeleteModifierConfirm, setShowDeleteModifierConfirm] = useState(false)
+  const [modifierToDelete, setModifierToDelete] = useState<Modifier | null>(null)
 
   useEffect(() => {
     fetchGroups()
@@ -98,11 +103,18 @@ export default function Modifiers() {
     setShowGroupForm(true)
   }
 
-  const handleDeleteGroup = async (group: ModifierGroup) => {
-    if (!confirm(`Delete modifier group "${group.name}"? All modifiers in this group will be deleted.`)) return
+  const handleDeleteGroup = (group: ModifierGroup) => {
+    setGroupToDelete(group)
+    setShowDeleteGroupConfirm(true)
+  }
+
+  const confirmDeleteGroup = async () => {
+    if (!groupToDelete) return
 
     try {
-      await api.delete(`/modifier-groups/${group.id}`)
+      await api.delete(`/modifier-groups/${groupToDelete.id}`)
+      setShowDeleteGroupConfirm(false)
+      setGroupToDelete(null)
       fetchGroups()
     } catch (error) {
       console.error('Failed to delete group:', error)
@@ -151,11 +163,18 @@ export default function Modifiers() {
     setShowModifierForm(true)
   }
 
-  const handleDeleteModifier = async (modifier: Modifier) => {
-    if (!confirm(`Delete modifier "${modifier.name}"?`)) return
+  const handleDeleteModifier = (modifier: Modifier) => {
+    setModifierToDelete(modifier)
+    setShowDeleteModifierConfirm(true)
+  }
+
+  const confirmDeleteModifier = async () => {
+    if (!modifierToDelete) return
 
     try {
-      await api.delete(`/modifiers/${modifier.id}`)
+      await api.delete(`/modifiers/${modifierToDelete.id}`)
+      setShowDeleteModifierConfirm(false)
+      setModifierToDelete(null)
       fetchGroups()
     } catch (error) {
       console.error('Failed to delete modifier:', error)
@@ -470,6 +489,36 @@ export default function Modifiers() {
           </Card>
         </div>
       )}
+
+      {/* Delete Group Confirmation */}
+      <ConfirmModal
+        open={showDeleteGroupConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteGroupConfirm(open)
+          if (!open) setGroupToDelete(null)
+        }}
+        title="Delete Modifier Group"
+        description={`Are you sure you want to delete "${groupToDelete?.name}"? All modifiers in this group will be deleted.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteGroup}
+      />
+
+      {/* Delete Modifier Confirmation */}
+      <ConfirmModal
+        open={showDeleteModifierConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteModifierConfirm(open)
+          if (!open) setModifierToDelete(null)
+        }}
+        title="Delete Modifier"
+        description={`Are you sure you want to delete modifier "${modifierToDelete?.name}"?`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteModifier}
+      />
     </div>
   )
 }

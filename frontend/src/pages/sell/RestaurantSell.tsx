@@ -7,6 +7,7 @@ import PaymentSheet from '@/components/sell/PaymentSheet'
 import ModifierModal from '@/components/sell/ModifierModal'
 import BillModal from '@/components/sell/BillModal'
 import FloorMap from '@/components/sell/FloorMap'
+import AlertModal from '@/components/common/AlertModal'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Users, Receipt } from 'lucide-react'
 import api from '@/lib/api'
@@ -35,6 +36,12 @@ export default function RestaurantSell() {
   const [billTotal, setBillTotal] = useState(0)
   const [billSubtotal, setBillSubtotal] = useState(0)
   const [billTaxLines, setBillTaxLines] = useState<{ name: string; amount: number }[]>([])
+  const [alertModal, setAlertModal] = useState<{ open: boolean; title: string; message: string; variant: 'error' | 'success' | 'info' }>({
+    open: false,
+    title: '',
+    message: '',
+    variant: 'error',
+  })
 
   useEffect(() => {
     fetchFloors()
@@ -119,7 +126,12 @@ export default function RestaurantSell() {
         }
       } catch (error) {
         console.error('Failed to open table:', error)
-        alert('Failed to open table session. Please try again.')
+        setAlertModal({
+          open: true,
+          title: 'Error',
+          message: 'Failed to open table session. Please try again.',
+          variant: 'error',
+        })
       }
     } else if (table.active_session) {
       // Continue existing session
@@ -180,7 +192,12 @@ export default function RestaurantSell() {
       clearCart()
     } catch (error) {
       console.error('Failed to add order:', error)
-      alert('Failed to add order. Please try again.')
+      setAlertModal({
+        open: true,
+        title: 'Error',
+        message: 'Failed to add order. Please try again.',
+        variant: 'error',
+      })
     } finally {
       setIsProcessing(false)
     }
@@ -372,6 +389,15 @@ export default function RestaurantSell() {
           onPayment={handlePayment}
         />
       )}
+
+      {/* Alert Modal */}
+      <AlertModal
+        open={alertModal.open}
+        onOpenChange={(open) => setAlertModal({ ...alertModal, open })}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant={alertModal.variant}
+      />
     </div>
   )
 }

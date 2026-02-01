@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Plus, Edit, Trash2, X, Save, Loader2, MapPin } from 'lucide-react'
+import ConfirmModal from '@/components/common/ConfirmModal'
 import api from '@/lib/api'
 
 interface FloorSection {
@@ -46,6 +47,10 @@ export default function Tables() {
     y_pos: 0,
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [showDeleteSectionConfirm, setShowDeleteSectionConfirm] = useState(false)
+  const [sectionToDelete, setSectionToDelete] = useState<FloorSection | null>(null)
+  const [showDeleteTableConfirm, setShowDeleteTableConfirm] = useState(false)
+  const [tableToDelete, setTableToDelete] = useState<Table | null>(null)
 
   useEffect(() => {
     fetchSections()
@@ -78,15 +83,22 @@ export default function Tables() {
     setShowSectionForm(true)
   }
 
-  const handleDeleteSection = async (section: FloorSection) => {
-    if (!confirm(`Delete floor section "${section.name}"? All tables in this section will be deleted.`)) return
+  const handleDeleteSection = (section: FloorSection) => {
+    setSectionToDelete(section)
+    setShowDeleteSectionConfirm(true)
+  }
+
+  const confirmDeleteSection = async () => {
+    if (!sectionToDelete) return
 
     try {
-      await api.delete(`/floor-sections/${section.id}`)
-      fetchSections()
-      if (selectedSection === section.id) {
+      await api.delete(`/floor-sections/${sectionToDelete.id}`)
+      setShowDeleteSectionConfirm(false)
+      if (selectedSection === sectionToDelete.id) {
         setSelectedSection(null)
       }
+      setSectionToDelete(null)
+      fetchSections()
     } catch (error) {
       console.error('Failed to delete section:', error)
     }
@@ -134,11 +146,18 @@ export default function Tables() {
     setShowTableForm(true)
   }
 
-  const handleDeleteTable = async (table: Table) => {
-    if (!confirm(`Delete table "${table.name}"?`)) return
+  const handleDeleteTable = (table: Table) => {
+    setTableToDelete(table)
+    setShowDeleteTableConfirm(true)
+  }
+
+  const confirmDeleteTable = async () => {
+    if (!tableToDelete) return
 
     try {
-      await api.delete(`/tables/${table.id}`)
+      await api.delete(`/tables/${tableToDelete.id}`)
+      setShowDeleteTableConfirm(false)
+      setTableToDelete(null)
       fetchSections()
     } catch (error) {
       console.error('Failed to delete table:', error)
@@ -414,6 +433,36 @@ export default function Tables() {
           </Card>
         </div>
       )}
+
+      {/* Delete Section Confirmation */}
+      <ConfirmModal
+        open={showDeleteSectionConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteSectionConfirm(open)
+          if (!open) setSectionToDelete(null)
+        }}
+        title="Delete Floor Section"
+        description={`Are you sure you want to delete "${sectionToDelete?.name}"? All tables in this section will be deleted.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteSection}
+      />
+
+      {/* Delete Table Confirmation */}
+      <ConfirmModal
+        open={showDeleteTableConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteTableConfirm(open)
+          if (!open) setTableToDelete(null)
+        }}
+        title="Delete Table"
+        description={`Are you sure you want to delete table "${tableToDelete?.name}"?`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteTable}
+      />
     </div>
   )
 }

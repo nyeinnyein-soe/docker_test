@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Edit, Trash2, X, Save, Loader2, ChevronDown, ChevronRight, ArrowLeft, Percent } from 'lucide-react'
+import ConfirmModal from '@/components/common/ConfirmModal'
+import AlertModal from '@/components/common/AlertModal'
 import api from '@/lib/api'
 import type { TaxGroup, Tax } from '@/types'
 
@@ -28,6 +30,16 @@ export default function Taxes() {
     priority: 0,
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false)
+  const [groupToDelete, setGroupToDelete] = useState<TaxGroup | null>(null)
+  const [showDeleteTaxConfirm, setShowDeleteTaxConfirm] = useState(false)
+  const [taxToDelete, setTaxToDelete] = useState<Tax | null>(null)
+  const [alertModal, setAlertModal] = useState<{ open: boolean; title: string; message: string; variant: 'error' | 'success' | 'info' }>({
+    open: false,
+    title: '',
+    message: '',
+    variant: 'error',
+  })
 
   useEffect(() => {
     fetchGroups()
@@ -45,7 +57,12 @@ export default function Taxes() {
     } catch (error: any) {
       console.error('Failed to fetch tax groups:', error)
       const errorMessage = error?.response?.data?.message || 'Failed to load tax groups'
-      alert(errorMessage)
+      setAlertModal({
+        open: true,
+        title: 'Loading Error',
+        message: errorMessage,
+        variant: 'error',
+      })
       // Don't prevent page from rendering - show empty state
       setGroups([])
     } finally {
@@ -77,14 +94,26 @@ export default function Taxes() {
     setShowGroupForm(true)
   }
 
-  const handleDeleteGroup = async (group: TaxGroup) => {
-    if (!confirm(`Delete tax group "${group.name}"?`)) return
+  const handleDeleteGroup = (group: TaxGroup) => {
+    setGroupToDelete(group)
+    setShowDeleteGroupConfirm(true)
+  }
+
+  const confirmDeleteGroup = async () => {
+    if (!groupToDelete) return
 
     try {
-      await api.delete(`/tax-groups/${group.id}`)
+      await api.delete(`/tax-groups/${groupToDelete.id}`)
+      setShowDeleteGroupConfirm(false)
+      setGroupToDelete(null)
       fetchGroups()
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to delete tax group')
+      setAlertModal({
+        open: true,
+        title: 'Delete Failed',
+        message: error.response?.data?.message || 'Failed to delete tax group',
+        variant: 'error',
+      })
     }
   }
 
@@ -131,17 +160,24 @@ export default function Taxes() {
     setShowTaxForm(true)
   }
 
-  const handleDeleteTax = async (tax: Tax) => {
-    if (!confirm(`Delete tax "${tax.name}"?`)) return
+  const handleDeleteTax = (tax: Tax) => {
+    setTaxToDelete(tax)
+    setShowDeleteTaxConfirm(true)
+  }
+
+  const confirmDeleteTax = async () => {
+    if (!taxToDelete) return
 
     try {
-      const group = groups.find(g => g.id === tax.tax_group_id)
+      const group = groups.find(g => g.id === taxToDelete.tax_group_id)
       if (group) {
-        const updatedTaxes = group.taxes.filter(t => t.id !== tax.id)
+        const updatedTaxes = group.taxes.filter(t => t.id !== taxToDelete.id)
         await api.put(`/tax-groups/${group.id}`, {
           name: group.name,
           taxes: updatedTaxes
         })
+        setShowDeleteTaxConfirm(false)
+        setTaxToDelete(null)
         fetchGroups()
       }
     } catch (error) {
@@ -371,6 +407,45 @@ export default function Taxes() {
           </Card>
         </div>
       )}
+
+      {/* Delete Group Confirmation */}
+      <ConfirmModal
+        open={showDeleteGroupConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteGroupConfirm(open)
+          if (!open) setGroupToDelete(null)
+        }}
+        title="Delete Tax Group"
+        description={`Are you sure you want to delete "${groupToDelete?.name}"?`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteGroup}
+      />
+
+      {/* Delete Tax Confirmation */}
+      <ConfirmModal
+        open={showDeleteTaxConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteTaxConfirm(open)
+          if (!open) setTaxToDelete(null)
+        }}
+        title="Delete Tax"
+        description={`Are you sure you want to delete tax "${taxToDelete?.name}"?`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteTax}
+      />
+
+      {/* Alert Modal */}
+      <AlertModal
+        open={alertModal.open}
+        onOpenChange={(open) => setAlertModal({ ...alertModal, open })}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant={alertModal.variant}
+      />
     </div>
   )
 }

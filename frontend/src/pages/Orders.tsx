@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatTime } from '@/lib/utils'
 import { Search, X, Receipt, RefreshCw } from 'lucide-react'
 import PaymentSheet from '@/components/sell/PaymentSheet'
+import ConfirmModal from '@/components/common/ConfirmModal'
 import api from '@/lib/api'
 import type { Order } from '@/types'
 
@@ -20,6 +21,8 @@ export default function Orders() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showPayment, setShowPayment] = useState(false)
+  const [showVoidConfirm, setShowVoidConfirm] = useState(false)
+  const [orderToVoid, setOrderToVoid] = useState<Order | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
@@ -98,15 +101,22 @@ export default function Orders() {
     }
   }
 
-  const handleVoidOrder = async (order: Order) => {
-    if (!confirm(`Void order #${order.order_number}? This action cannot be undone.`)) return
+  const handleVoidOrder = (order: Order) => {
+    setOrderToVoid(order)
+    setShowVoidConfirm(true)
+  }
+
+  const confirmVoidOrder = async () => {
+    if (!orderToVoid) return
 
     setIsProcessing(true)
     try {
-      await api.post(`/orders/${order.uuid}/void`, {
+      await api.post(`/orders/${orderToVoid.uuid}/void`, {
         reason: 'Voided from orders page',
       })
 
+      setShowVoidConfirm(false)
+      setOrderToVoid(null)
       fetchOrders()
       setSelectedOrder(null)
     } catch (error) {
@@ -363,6 +373,22 @@ export default function Orders() {
           onPayment={handlePayment}
         />
       )}
+
+      {/* Void Confirmation Modal */}
+      <ConfirmModal
+        open={showVoidConfirm}
+        onOpenChange={(open) => {
+          setShowVoidConfirm(open)
+          if (!open) setOrderToVoid(null)
+        }}
+        title="Void Order"
+        description={`Are you sure you want to void order #${orderToVoid?.order_number}? This action cannot be undone and will restore inventory.`}
+        confirmLabel="Void Order"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmVoidOrder}
+        isLoading={isProcessing}
+      />
     </div>
   )
 }

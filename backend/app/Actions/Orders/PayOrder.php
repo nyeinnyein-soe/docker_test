@@ -4,6 +4,7 @@ namespace App\Actions\Orders;
 
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\TableSession;
 use App\Models\Terminal;
 use App\Services\AuditLogger;
 use App\Support\Money;
@@ -78,8 +79,39 @@ class PayOrder
                 'status' => $paymentStatus === 'PAID' ? 'COMPLETED' : $order->status,
             ]);
 
+            // Auto-close table session if all orders are paid
+            if ($paymentStatus === 'PAID') {
+                $this->autoCloseTableSessionIfAllPaid($order);
+            }
+
             return $order->fresh(['items', 'payments']);
         });
+    }
+
+    /**
+     * Automatically close the table session if all orders are paid.
+     */
+    private function autoCloseTableSessionIfAllPaid(Order $order): void
+    {
+        if (! $order->table_session_id) {
+            return;
+        }
+
+        // Check if there are any remaining unpaid orders for this session
+        $unpaidOrders = Order::where('table_session_id', $order->table_session_id)
+            ->whereIn('payment_status', ['UNPAID', 'PARTIALLY_PAID'])
+            ->whereNotIn('status', ['VOIDED', 'REFUNDED'])
+            ->count();
+
+        if ($unpaidOrders === 0) {
+            $session = TableSession::find($order->table_session_id);
+            if ($session && $session->status !== 'CLOSED') {
+                $session->update([
+                    'status' => 'CLOSED',
+                    'closed_at' => now(),
+                ]);
+            }
+        }
     }
 }
 

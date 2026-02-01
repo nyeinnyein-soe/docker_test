@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, Edit, Trash2, X, Save, Loader2, Layers, Sliders, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import ConfirmModal from '@/components/common/ConfirmModal'
 import api from '@/lib/api'
 import type { Product, ProductVariant } from '@/types'
 
@@ -50,6 +51,8 @@ export default function ProductManagementModal({ product, onClose, onUpdate }: P
     cost: '',
   })
   const [isSavingVariant, setIsSavingVariant] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [variantToDelete, setVariantToDelete] = useState<ProductVariant | null>(null)
 
   useEffect(() => {
     fetchModifierGroups()
@@ -101,12 +104,19 @@ export default function ProductManagementModal({ product, onClose, onUpdate }: P
     setShowVariantForm(true)
   }
 
-  const handleDeleteVariant = async (variant: ProductVariant) => {
-    if (!confirm(`Delete variant "${variant.name}"?`)) return
+  const handleDeleteVariant = (variant: ProductVariant) => {
+    setVariantToDelete(variant)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteVariant = async () => {
+    if (!variantToDelete) return
 
     try {
-      await api.delete(`/variants/${variant.id}`)
-      setVariants(variants.filter((v) => v.id !== variant.id))
+      await api.delete(`/variants/${variantToDelete.id}`)
+      setVariants(variants.filter((v) => v.id !== variantToDelete.id))
+      setShowDeleteConfirm(false)
+      setVariantToDelete(null)
       onUpdate()
     } catch (error) {
       console.error('Failed to delete variant:', error)
@@ -428,6 +438,21 @@ export default function ProductManagementModal({ product, onClose, onUpdate }: P
             </Card>
           </div>
         )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmModal
+          open={showDeleteConfirm}
+          onOpenChange={(open) => {
+            setShowDeleteConfirm(open)
+            if (!open) setVariantToDelete(null)
+          }}
+          title="Delete Variant"
+          description={`Are you sure you want to delete variant "${variantToDelete?.name}"?`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="danger"
+          onConfirm={confirmDeleteVariant}
+        />
       </Card>
     </div>
   )

@@ -3,6 +3,7 @@
 namespace App\Actions\Orders;
 
 use App\Models\Order;
+use App\Models\TableSession;
 use App\Services\AuditLogger;
 use App\Services\InventoryService;
 use App\Support\Money;
@@ -67,7 +68,35 @@ class VoidOrder
                 $data['reason'] ?? null
             );
 
+            // Auto-close table session if no more active orders
+            $this->autoCloseTableSessionIfEmpty($order);
+
             return $order->fresh(['items', 'taxLines', 'discounts', 'payments']);
         });
+    }
+
+    /**
+     * Automatically close the table session if there are no more active orders.
+     */
+    private function autoCloseTableSessionIfEmpty(Order $order): void
+    {
+        if (! $order->table_session_id) {
+            return;
+        }
+
+        // Check if there are any remaining active orders for this session
+        $activeOrders = Order::where('table_session_id', $order->table_session_id)
+            ->whereNotIn('status', ['VOIDED', 'REFUNDED'])
+            ->count();
+
+        if ($activeOrders === 0) {
+            $session = TableSession::find($order->table_session_id);
+            if ($session && $session->status !== 'CLOSED') {
+                $session->update([
+                    'status' => 'CLOSED',
+                    'closed_at' => now(),
+                ]);
+            }
+        }
     }
 }
