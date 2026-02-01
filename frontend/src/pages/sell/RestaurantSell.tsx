@@ -32,6 +32,7 @@ export default function RestaurantSell() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [guestCount, setGuestCount] = useState(2)
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null)
+  const [currentSessionUuid, setCurrentSessionUuid] = useState<string | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [billTotal, setBillTotal] = useState(0)
   const [billSubtotal, setBillSubtotal] = useState(0)
@@ -96,57 +97,34 @@ export default function RestaurantSell() {
     }
   }
 
-  const handleTableSelect = async (table: Table) => {
+  const handleTableSelect = (table: Table) => {
     if (table.status === 'AVAILABLE') {
-      // Open new session
-      try {
-        const response = await api.post('/floor/sessions', {
-          table_id: table.id,
-          guest_count: guestCount,
-        })
-        const session = response.data.data || response.data
-        if (session) {
-          // Update selectedTable with the new active_session
-          setSelectedTable({
-            ...table,
-            status: 'OCCUPIED',
-            active_session: {
-              id: session.id,
-              uuid: session.uuid,
-              table_id: table.id,
-              status: 'ACTIVE',
-              guest_count: guestCount,
-            },
-          })
-          setTableSession(session.id)
-          setCurrentSessionId(session.id)
-          setOrderType('DINE_IN')
-          setView('order')
-          fetchFloors() // Refresh floor status
-        }
-      } catch (error) {
-        console.error('Failed to open table:', error)
-        setAlertModal({
-          open: true,
-          title: 'Error',
-          message: 'Failed to open table session. Please try again.',
-          variant: 'error',
-        })
-      }
+      // Just select the table - session will be created when first order is placed
+      setSelectedTable(table)
+      setTableSession(null)
+      setCurrentSessionId(null)
+      setCurrentSessionUuid(null)
+      setOrderType('DINE_IN')
+      setView('order')
     } else if (table.active_session) {
       // Continue existing session
       setSelectedTable(table)
       setTableSession(table.active_session.id)
       setCurrentSessionId(table.active_session.id)
+      setCurrentSessionUuid(table.active_session.uuid)
       setOrderType('DINE_IN')
       setView('order')
     }
   }
 
-  const handleBackToFloor = () => {
+  const handleBackToFloor = async () => {
+    // Refresh floor data to get latest order counts
+    await fetchFloors()
+    
     setView('floor')
     setSelectedTable(null)
     setCurrentSessionId(null)
+    setCurrentSessionUuid(null)
     clearCart()
   }
 
@@ -170,10 +148,39 @@ export default function RestaurantSell() {
   }
 
   const handleAddOrder = async () => {
-    if (!shift || !currentSessionId || items.length === 0) return
+    if (!shift || !selectedTable || items.length === 0) return
 
     setIsProcessing(true)
     try {
+      let sessionId = currentSessionId
+
+      // If no session exists yet, create one now
+      if (!sessionId) {
+        const response = await api.post('/floor/sessions', {
+          table_id: selectedTable.id,
+          guest_count: guestCount,
+        })
+        const session = response.data.data || response.data
+        sessionId = session.id
+        
+        // Update state with the new session
+        setCurrentSessionId(session.id)
+        setCurrentSessionUuid(session.uuid)
+        setTableSession(session.id)
+        setSelectedTable({
+          ...selectedTable,
+          status: 'OCCUPIED',
+          active_session: {
+            id: session.id,
+            uuid: session.uuid,
+            table_id: selectedTable.id,
+            status: 'ACTIVE',
+            guest_count: guestCount,
+          },
+        })
+        fetchFloors() // Refresh floor status
+      }
+
       const orderItems = items.map((item) => ({
         variant_id: item.variant.id,
         quantity: item.quantity,
@@ -184,10 +191,13 @@ export default function RestaurantSell() {
       await api.post('/orders', {
         shift_id: shift.id,
         type: 'DINE_IN',
-        table_session_id: currentSessionId,
+        table_session_id: sessionId,
         items: orderItems,
       })
 
+      // Refresh floor data to update order count on table
+      fetchFloors()
+      
       // Clear cart after adding order, but stay on order view
       clearCart()
     } catch (error) {
@@ -249,6 +259,7 @@ export default function RestaurantSell() {
       setView('floor')
       setSelectedTable(null)
       setCurrentSessionId(null)
+      setCurrentSessionUuid(null)
       setShowPayment(false)
     } catch (error) {
       console.error('Payment failed:', error)
