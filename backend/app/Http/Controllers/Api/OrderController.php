@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\Orders\ConfirmOrder;
 use App\Actions\Orders\CreateOrder;
 use App\Actions\Orders\PayOrder;
+use App\Actions\Orders\UpdateOrderTax;
 use App\Actions\Orders\VoidOrder;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
@@ -45,6 +46,7 @@ class OrderController extends Controller
             'table_session_id' => ['nullable', 'integer'],
             'customer_id' => ['nullable', 'integer'],
             'type' => ['required', 'in:DINE_IN,TAKEOUT,TAKE_OUT,DELIVERY'],
+            'tax_type' => ['nullable', 'in:NONE,COMMERCIAL,SERVICE,BOTH'],
             'order_number' => ['nullable', 'string', 'max:50'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.variant_id' => ['required', 'integer'],
@@ -112,6 +114,17 @@ class OrderController extends Controller
         $order = $voidOrder($uuid, $data);
 
         return response()->json($order);
+    }
+
+    public function updateTax(string $uuid, Request $request, UpdateOrderTax $updateOrderTax)
+    {
+        $data = $request->validate([
+            'tax_type' => ['required', 'in:NONE,COMMERCIAL,SERVICE,BOTH'],
+        ]);
+
+        $order = $updateOrderTax($uuid, $data['tax_type']);
+
+        return response()->json(['data' => $order]);
     }
 }
 

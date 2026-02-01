@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\OrderItemModifier;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Store;
 use App\Services\DiscountService;
 use App\Services\InventoryService;
 use App\Services\TaxService;
@@ -28,6 +29,18 @@ class CreateOrder
         return DB::transaction(function () use ($payload) {
             $employee = $payload['employee'];
             $storeId = $employee->store_id;
+            $store = Store::findOrFail($storeId);
+
+            // Determine tax type: use provided value or fall back to store default
+            $taxType = $payload['tax_type'] ?? $store->default_tax_type ?? 'NONE';
+
+            // Snapshot the current store tax configuration
+            $taxConfigSnapshot = [
+                'commercial_tax_rate' => $store->commercial_tax_rate,
+                'commercial_tax_inclusive' => $store->commercial_tax_inclusive,
+                'service_charge_rate' => $store->service_charge_rate,
+                'service_charge_inclusive' => $store->service_charge_inclusive,
+            ];
 
             $order = Order::create([
                 'uuid' => (string) Str::uuid(),
@@ -38,6 +51,8 @@ class CreateOrder
                 'customer_id' => $payload['customer_id'] ?? null,
                 'order_number' => $payload['order_number'],
                 'type' => $payload['type'],
+                'tax_type' => $taxType,
+                'tax_config_snapshot' => $taxConfigSnapshot,
                 'status' => 'OPEN',
                 'payment_status' => 'UNPAID',
                 'version' => 1,
@@ -77,11 +92,6 @@ class CreateOrder
                 $lineSubtotal = Money::mul($unitPrice, $qty);
                 $subtotal = Money::add($subtotal, $lineSubtotal);
 
-                // Use tax_group_id from product (take first one found for simplicity)
-                if (! $taxGroupId && $variant->product?->tax_group_id) {
-                    $taxGroupId = $variant->product->tax_group_id;
-                }
-
                 $orderItem = OrderItem::create([
                     'uuid' => (string) Str::uuid(),
                     'order_id' => $order->id,
@@ -90,6 +100,7 @@ class CreateOrder
                     'unit_price' => $unitPrice,
                     'unit_cost' => $unitCost,
                     'total_line_amount' => $lineSubtotal,
+                    'subtotal_after_discount' => $lineSubtotal, // Default to same as subtotal initially
                     'kitchen_status' => 'PENDING',
                     'is_voided' => false,
                 ]);
@@ -108,7 +119,7 @@ class CreateOrder
             // Update subtotal first
             $order->update(['subtotal' => $subtotal]);
 
-            // Calculate and apply discount (if provided)
+            // Calculate and apply discount (refactored to distribute to items)
             $discountId = $payload['discount_id'] ?? null;
             $manualDiscount = $payload['manual_discount'] ?? null;
             $totalDiscount = $this->discountService->calculateAndApply(
@@ -118,21 +129,22 @@ class CreateOrder
                 $employee->id
             );
 
-            // Calculate taxable amount (subtotal - discount)
-            $taxableSubtotal = Money::sub($subtotal, $totalDiscount);
-
-            // Override tax group if explicitly provided
-            if (isset($payload['tax_group_id'])) {
-                $taxGroupId = $payload['tax_group_id'];
+            // Calculate taxable amount after discount using the distributed item discounts
+            $order->load('items.variant.product');
+            $taxableAmount = '0.00';
+            foreach ($order->items as $item) {
+                if ($item->variant->product?->is_taxable ?? true) {
+                    $taxableAmount = Money::add($taxableAmount, $item->subtotal_after_discount);
+                }
             }
 
-            // Calculate and apply tax on (subtotal - discount)
-            $order->update(['subtotal' => $taxableSubtotal]);
-            $totalTax = $this->taxService->calculateAndApply($order, $taxGroupId);
-            $order->update(['subtotal' => $subtotal]); // Restore original subtotal
+            // Calculate tax using the new tax type system (now snapshot-aware)
+            $taxBreakdown = $this->taxService->calculateByType($order, $taxType, $store, $taxableAmount);
+            $totalTax = $taxBreakdown['total_tax'];
+            $exclusiveTax = $taxBreakdown['exclusive_tax'];
 
-            // Grand total = subtotal + tax - discount
-            $grandTotal = Money::add($subtotal, $totalTax);
+            // Grand total = subtotal + exclusive tax - discount
+            $grandTotal = Money::add($subtotal, $exclusiveTax);
             $grandTotal = Money::sub($grandTotal, $totalDiscount);
 
             $order->update([

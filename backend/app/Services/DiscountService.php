@@ -60,15 +60,47 @@ class DiscountService
             $discountValue = $manualDiscount['value'] ?? 0;
         }
 
+        $totalSubtotal = $order->subtotal;
         $discountAmount = $this->calculateAmount(
-            $order->subtotal,
+            $totalSubtotal,
             $discountType,
             $discountValue
         );
 
         // Don't allow discount greater than subtotal
-        if (Money::compare($discountAmount, $order->subtotal) > 0) {
-            $discountAmount = Money::format($order->subtotal);
+        if (Money::compare($discountAmount, $totalSubtotal) > 0) {
+            $discountAmount = Money::format($totalSubtotal);
+        }
+
+        // Apply discount proportionally to each item
+        if (Money::compare($discountAmount, '0.00') > 0 && Money::compare($totalSubtotal, '0.00') > 0) {
+            $items = $order->items;
+            $remainingDiscount = $discountAmount;
+
+            foreach ($items as $index => $item) {
+                $itemDiscount = '0.00';
+                
+                // If it's the last item, assign the remainder to avoid rounding issues
+                if ($index === count($items) - 1) {
+                    $itemDiscount = $remainingDiscount;
+                } else {
+                    $ratio = (float) $item->total_line_amount / (float) $totalSubtotal;
+                    $itemDiscount = Money::mul($discountAmount, $ratio);
+                }
+
+                $item->update([
+                    'discount_amount' => $itemDiscount,
+                    'subtotal_after_discount' => Money::sub($item->total_line_amount, $itemDiscount),
+                ]);
+
+                $remainingDiscount = Money::sub($remainingDiscount, $itemDiscount);
+            }
+        } else {
+            // Ensure 0 discount for items if no total discount
+            $order->items()->update([
+                'discount_amount' => '0.00',
+                'subtotal_after_discount' => DB::raw('total_line_amount'),
+            ]);
         }
 
         // Create snapshot

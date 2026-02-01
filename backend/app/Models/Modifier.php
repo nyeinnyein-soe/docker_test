@@ -16,15 +16,12 @@ class Modifier extends Model
         'cost_extra',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'price_extra' => 'decimal:2',
-            'cost_extra' => 'decimal:2',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'price_extra' => 'integer',
+        'cost_extra' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
     public function group()
     {

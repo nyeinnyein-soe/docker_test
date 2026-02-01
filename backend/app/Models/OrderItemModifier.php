@@ -21,8 +21,8 @@ class OrderItemModifier extends Model
     protected function casts(): array
     {
         return [
-            'price_charged' => 'decimal:2',
-            'cost_charged' => 'decimal:2',
+            'price_charged' => 'integer',
+            'cost_charged' => 'integer',
             'created_at' => 'datetime',
         ];
     }

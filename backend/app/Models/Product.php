@@ -15,6 +15,7 @@ class Product extends Model
         'store_id',
         'category_id',
         'tax_group_id',
+        'is_taxable',
         'name',
         'description',
         'type',
@@ -26,6 +27,7 @@ class Product extends Model
     {
         return [
             'is_active' => 'boolean',
+            'is_taxable' => 'boolean',
             'deleted_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

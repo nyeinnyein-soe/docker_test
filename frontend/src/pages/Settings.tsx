@@ -214,7 +214,7 @@ export default function Settings() {
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
           <Link
-            to="/app/taxes"
+            to="/app/settings/store"
             className="w-full flex items-center justify-between p-4 rounded-lg hover:bg-secondary/50 transition-colors"
           >
             <span>Tax Settings</span>

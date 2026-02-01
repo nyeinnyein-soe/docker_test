@@ -18,6 +18,8 @@ class Order extends Model
         'customer_id',
         'order_number',
         'type',
+        'tax_type',
+        'tax_config_snapshot',
         'status',
         'payment_status',
         'version',
@@ -31,11 +33,12 @@ class Order extends Model
     protected function casts(): array
     {
         return [
-            'subtotal' => 'decimal:2',
-            'total_tax' => 'decimal:2',
-            'total_discount' => 'decimal:2',
-            'grand_total' => 'decimal:2',
-            'total_paid' => 'decimal:2',
+            'subtotal' => 'integer',
+            'total_tax' => 'integer',
+            'total_discount' => 'integer',
+            'grand_total' => 'integer',
+            'total_paid' => 'integer',
+            'tax_config_snapshot' => 'array',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

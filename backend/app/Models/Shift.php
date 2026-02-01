@@ -28,10 +28,10 @@ class Shift extends Model
         return [
             'start_time' => 'datetime',
             'end_time' => 'datetime',
-            'starting_cash' => 'decimal:2',
-            'expected_cash' => 'decimal:2',
-            'actual_cash' => 'decimal:2',
-            'difference' => 'decimal:2',
+            'starting_cash' => 'integer',
+            'expected_cash' => 'integer',
+            'actual_cash' => 'integer',
+            'difference' => 'integer',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

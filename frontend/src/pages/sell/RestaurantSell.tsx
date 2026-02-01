@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
+import { useConfigStore } from '@/stores/config'
 import ProductGrid from '@/components/sell/ProductGrid'
 import Cart from '@/components/sell/Cart'
 import PaymentSheet from '@/components/sell/PaymentSheet'
@@ -17,7 +18,8 @@ type View = 'floor' | 'order'
 
 export default function RestaurantSell() {
   const { shift } = useAuthStore()
-  const { items, addItem, clearCart, setTableSession, setOrderType } = useCartStore()
+  const { items, addItem, clearCart, setTableSession, setOrderType, taxType, setTaxType } = useCartStore()
+  const { storeSettings, fetchStoreSettings } = useConfigStore()
 
   const [view, setView] = useState<View>('floor')
   const [floors, setFloors] = useState<Floor[]>([])
@@ -25,14 +27,12 @@ export default function RestaurantSell() {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [taxGroups, setTaxGroups] = useState<TaxGroup[]>([])
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [showPayment, setShowPayment] = useState(false)
   const [showBill, setShowBill] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [guestCount, setGuestCount] = useState(2)
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null)
-  const [currentSessionUuid, setCurrentSessionUuid] = useState<string | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [billTotal, setBillTotal] = useState(0)
   const [billSubtotal, setBillSubtotal] = useState(0)
@@ -47,7 +47,15 @@ export default function RestaurantSell() {
   useEffect(() => {
     fetchFloors()
     fetchMenu()
+    fetchStoreSettings()
   }, [])
+
+  // Set default tax type from store settings
+  useEffect(() => {
+    if (storeSettings && taxType === 'NONE') {
+      setTaxType(storeSettings.default_tax_type)
+    }
+  }, [storeSettings])
 
   const fetchFloors = async () => {
     try {
@@ -68,7 +76,7 @@ export default function RestaurantSell() {
   const fetchMenu = async () => {
     try {
       const response = await api.get('/sync/menu')
-      const { categories: cats, products: prods, variants, modifier_groups, modifiers, tax_groups } = response.data
+      const { categories: cats, products: prods, variants, modifier_groups, modifiers } = response.data
 
       // Map modifiers to groups
       const groupsWithModifiers = (modifier_groups || []).map((g: any) => ({
@@ -78,10 +86,10 @@ export default function RestaurantSell() {
 
       const productsWithVariants = prods.map((p: Product) => {
         // Find which modifier groups belong to this product
-        const productGroups = groupsWithModifiers.filter((g: any) => 
+        const productGroups = groupsWithModifiers.filter((g: any) =>
           (p.modifier_groups || []).some((pg: any) => Number(pg.id) === Number(g.id))
         )
-        
+
         return {
           ...p,
           variants: variants.filter((v: { product_id: number }) => Number(v.product_id) === Number(p.id)),
@@ -91,7 +99,6 @@ export default function RestaurantSell() {
 
       setCategories(cats)
       setProducts(productsWithVariants)
-      setTaxGroups(tax_groups || [])
     } catch (error) {
       console.error('Failed to fetch menu:', error)
     }
@@ -103,7 +110,6 @@ export default function RestaurantSell() {
       setSelectedTable(table)
       setTableSession(null)
       setCurrentSessionId(null)
-      setCurrentSessionUuid(null)
       setOrderType('DINE_IN')
       setView('order')
     } else if (table.active_session) {
@@ -111,7 +117,6 @@ export default function RestaurantSell() {
       setSelectedTable(table)
       setTableSession(table.active_session.id)
       setCurrentSessionId(table.active_session.id)
-      setCurrentSessionUuid(table.active_session.uuid)
       setOrderType('DINE_IN')
       setView('order')
     }
@@ -120,11 +125,10 @@ export default function RestaurantSell() {
   const handleBackToFloor = async () => {
     // Refresh floor data to get latest order counts
     await fetchFloors()
-    
+
     setView('floor')
     setSelectedTable(null)
     setCurrentSessionId(null)
-    setCurrentSessionUuid(null)
     clearCart()
   }
 
@@ -162,10 +166,9 @@ export default function RestaurantSell() {
         })
         const session = response.data.data || response.data
         sessionId = session.id
-        
+
         // Update state with the new session
         setCurrentSessionId(session.id)
-        setCurrentSessionUuid(session.uuid)
         setTableSession(session.id)
         setSelectedTable({
           ...selectedTable,
@@ -191,13 +194,14 @@ export default function RestaurantSell() {
       await api.post('/orders', {
         shift_id: shift.id,
         type: 'DINE_IN',
+        tax_type: taxType,
         table_session_id: sessionId,
         items: orderItems,
       })
 
       // Refresh floor data to update order count on table
       fetchFloors()
-      
+
       // Clear cart after adding order, but stay on order view
       clearCart()
     } catch (error) {
@@ -247,19 +251,16 @@ export default function RestaurantSell() {
         })
       }
 
-      // Close table session after all orders are paid
-      if (selectedTable.active_session) {
-        await api.put(`/floor/sessions/${selectedTable.active_session.uuid}/close`)
-      }
+      // Note: Backend automatically closes the table session when the last order is paid
+      // via autoCloseTableSessionIfAllPaid in PayOrder action.
 
       // Refresh floor data before showing floor view
       await fetchFloors()
-      
+
       clearCart()
       setView('floor')
       setSelectedTable(null)
       setCurrentSessionId(null)
-      setCurrentSessionUuid(null)
       setShowPayment(false)
     } catch (error) {
       console.error('Payment failed:', error)
@@ -336,7 +337,11 @@ export default function RestaurantSell() {
             </p>
           </div>
         </div>
-        <Button variant="outline" onClick={handleShowBill}>
+        <Button
+          variant="outline"
+          onClick={handleShowBill}
+          disabled={!currentSessionId}
+        >
           <Receipt className="w-4 h-4 mr-2" />
           Bill
         </Button>
@@ -360,7 +365,6 @@ export default function RestaurantSell() {
             onCheckout={handleAddOrder}
             isProcessing={isProcessing}
             checkoutLabel="Add Order"
-            taxGroups={taxGroups}
           />
         </div>
       </div>

@@ -16,6 +16,8 @@ interface BillModalProps {
 export default function BillModal({ tableSessionId, tableName, onClose, onPay }: BillModalProps) {
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isUpdatingTax, setIsUpdatingTax] = useState(false)
+  const [taxType, setTaxType] = useState<string>('NONE')
 
   useEffect(() => {
     fetchOrders()
@@ -30,6 +32,11 @@ export default function BillModal({ tableSessionId, tableName, onClose, onPay }:
         (order: Order) => order.table_session_id === tableSessionId && order.payment_status !== 'PAID'
       )
       setOrders(sessionOrders)
+
+      // Default to the tax type of the first order
+      if (sessionOrders.length > 0) {
+        setTaxType(sessionOrders[0].tax_type)
+      }
     } catch (error) {
       console.error('Failed to fetch orders:', error)
     } finally {
@@ -37,7 +44,24 @@ export default function BillModal({ tableSessionId, tableName, onClose, onPay }:
     }
   }
 
+  const handleUpdateTaxType = async (newType: string) => {
+    setTaxType(newType)
+    setIsUpdatingTax(true)
+    try {
+      // Update all orders in the session with the new tax type
+      await Promise.all(
+        orders.map(order => api.patch(`/orders/${order.uuid}/tax`, { tax_type: newType }))
+      )
+      await fetchOrders()
+    } catch (error) {
+      console.error('Failed to update tax type:', error)
+    } finally {
+      setIsUpdatingTax(false)
+    }
+  }
+
   const subtotal = orders.reduce((sum, order) => sum + parseFloat(order.subtotal), 0)
+  // ... (rest of total calculations)
   const totalTax = orders.reduce((sum, order) => sum + parseFloat(order.total_tax), 0)
   const totalDiscount = orders.reduce((sum, order) => sum + parseFloat(order.total_discount), 0)
   const total = orders.reduce((sum, order) => sum + parseFloat(order.grand_total), 0)
@@ -138,26 +162,59 @@ export default function BillModal({ tableSessionId, tableName, onClose, onPay }:
         </div>
 
         {/* Total Breakdown */}
-        <div className="border-t p-4 space-y-2 bg-secondary/5">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>{formatCurrency(subtotal)}</span>
+        <div className="border-t p-4 space-y-4 bg-secondary/5">
+          {/* Tax Type Selection */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Tax Selection
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 'NONE', label: 'No Tax' },
+                { value: 'COMMERCIAL', label: 'Comm. Tax' },
+                { value: 'SERVICE', label: 'Service Chg.' },
+                { value: 'BOTH', label: 'Both' },
+              ].map((opt) => (
+                <Button
+                  key={opt.value}
+                  variant={taxType === opt.value ? 'default' : 'outline'}
+                  size="sm"
+                  className="text-xs h-9"
+                  disabled={isUpdatingTax || isLoading}
+                  onClick={() => handleUpdateTaxType(opt.value)}
+                >
+                  {isUpdatingTax && taxType === opt.value ? (
+                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  ) : null}
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
           </div>
-          {totalTax > 0 && (
+
+          <div className="space-y-2 pt-2 border-t">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax</span>
-              <span className="text-primary">+{formatCurrency(totalTax)}</span>
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
-          )}
-          {totalDiscount > 0 && (
-            <div className="flex justify-between text-sm text-destructive font-medium">
-              <span>Discounts</span>
-              <span>-{formatCurrency(totalDiscount)}</span>
+            {taxLines.map((line, i) => (
+              <div key={i} className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{line.name}</span>
+                <span className="text-primary">+{formatCurrency(line.amount)}</span>
+              </div>
+            ))}
+            {totalDiscount > 0 && (
+              <div className="flex justify-between text-sm text-destructive font-medium">
+                <span>Discounts</span>
+                <span>-{formatCurrency(totalDiscount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center text-lg pt-2 border-t mt-2">
+              <span className="font-bold">Grand Total</span>
+              <span className="text-2xl font-black text-primary">
+                {formatCurrency(total)}
+              </span>
             </div>
-          )}
-          <div className="flex justify-between items-center text-lg pt-2 border-t mt-2">
-            <span className="font-bold">Grand Total</span>
-            <span className="text-2xl font-black text-primary">{formatCurrency(total)}</span>
           </div>
 
           <Button

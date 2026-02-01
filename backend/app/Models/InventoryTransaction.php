@@ -26,8 +26,8 @@ class InventoryTransaction extends Model
     protected function casts(): array
     {
         return [
-            'quantity_change' => 'decimal:4',
-            'cost_at_time' => 'decimal:2',
+            'quantity_change' => 'float',
+            'cost_at_time' => 'integer',
             'created_at' => 'datetime',
         ];
     }

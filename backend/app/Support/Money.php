@@ -13,7 +13,7 @@ class Money
      */
     public static function add(string|float $a, string|float $b): string
     {
-        return number_format((float) $a + (float) $b, 2, '.', '');
+        return number_format((float) $a + (float) $b, 0, '.', '');
     }
 
     /**
@@ -21,13 +21,13 @@ class Money
      */
     public static function sub(string|float $a, string|float $b): string
     {
-        return number_format((float) $a - (float) $b, 2, '.', '');
+        return number_format((float) $a - (float) $b, 0, '.', '');
     }
 
     /**
      * Multiply two values.
      */
-    public static function mul(string|float $a, string|float $b, int $decimals = 2): string
+    public static function mul(string|float $a, string|float $b, int $decimals = 0): string
     {
         return number_format((float) $a * (float) $b, $decimals, '.', '');
     }
@@ -35,10 +35,10 @@ class Money
     /**
      * Divide a by b.
      */
-    public static function div(string|float $a, string|float $b, int $decimals = 2): string
+    public static function div(string|float $a, string|float $b, int $decimals = 0): string
     {
         if ((float) $b == 0) {
-            return '0.00';
+            return '0';
         }
         return number_format((float) $a / (float) $b, $decimals, '.', '');
     }
@@ -50,7 +50,7 @@ class Money
     public static function compare(string|float $a, string|float $b): int
     {
         $diff = (float) $a - (float) $b;
-        if (abs($diff) < 0.001) {
+        if (abs($diff) < 0.1) {
             return 0;
         }
         return $diff > 0 ? 1 : -1;
@@ -59,7 +59,7 @@ class Money
     /**
      * Format a value as money string.
      */
-    public static function format(string|float $amount, int $decimals = 2): string
+    public static function format(string|float $amount, int $decimals = 0): string
     {
         return number_format((float) $amount, $decimals, '.', '');
     }

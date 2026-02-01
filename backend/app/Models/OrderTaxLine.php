@@ -22,8 +22,8 @@ class OrderTaxLine extends Model
     protected function casts(): array
     {
         return [
-            'tax_rate' => 'decimal:4',
-            'tax_amount' => 'decimal:2',
+            'tax_rate' => 'float',
+            'tax_amount' => 'integer',
             'created_at' => 'datetime',
         ];
     }

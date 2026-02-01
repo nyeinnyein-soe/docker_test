@@ -23,6 +23,16 @@ export interface Shift {
   difference: string | null
 }
 
+export type TaxType = 'NONE' | 'COMMERCIAL' | 'SERVICE' | 'BOTH'
+
+export interface StoreSettings {
+  commercial_tax_rate: number
+  commercial_tax_inclusive: boolean
+  service_charge_rate: number
+  service_charge_inclusive: boolean
+  default_tax_type: TaxType
+}
+
 export interface Product {
   id: number
   uuid: string
@@ -32,6 +42,7 @@ export interface Product {
   description: string | null
   image_url: string | null
   is_active: boolean
+  is_taxable: boolean
   variants: ProductVariant[]
   modifier_groups?: ModifierGroup[]
   tax_group_id?: number | null
@@ -76,6 +87,7 @@ export interface Order {
   customer_id: number | null
   order_number: string
   type: 'DINE_IN' | 'TAKEOUT' | 'TAKE_OUT' | 'DELIVERY'
+  tax_type: TaxType
   status: 'OPEN' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'VOIDED' | 'REFUNDED'
   payment_status: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'
   subtotal: string

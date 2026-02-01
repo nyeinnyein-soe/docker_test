@@ -23,7 +23,7 @@ class Customer extends Model
     protected function casts(): array
     {
         return [
-            'total_spend' => 'decimal:2',
+            'total_spend' => 'integer',
             'last_visit_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

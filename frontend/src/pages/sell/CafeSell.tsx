@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
+import { useConfigStore } from '@/stores/config'
 import ProductGrid from '@/components/sell/ProductGrid'
 import Cart from '@/components/sell/Cart'
 import PaymentSheet from '@/components/sell/PaymentSheet'
@@ -10,11 +11,11 @@ import type { Category, Product, ProductVariant, Modifier, ModifierGroup } from 
 
 export default function CafeSell() {
   const { shift } = useAuthStore()
-  const { items, addItem, clearCart, subtotal } = useCartStore()
+  const { items, addItem, clearCart, subtotal, taxType, setTaxType, calculateTaxByType, grandTotal } = useCartStore()
+  const { storeSettings, fetchStoreSettings } = useConfigStore()
 
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [taxGroups, setTaxGroups] = useState<TaxGroup[]>([])
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showPayment, setShowPayment] = useState(false)
@@ -22,12 +23,20 @@ export default function CafeSell() {
 
   useEffect(() => {
     fetchMenu()
+    fetchStoreSettings()
   }, [])
+
+  // Set default tax type from store settings
+  useEffect(() => {
+    if (storeSettings && taxType === 'NONE') {
+      setTaxType(storeSettings.default_tax_type)
+    }
+  }, [storeSettings])
 
   const fetchMenu = async () => {
     try {
       const response = await api.get('/sync/menu')
-      const { categories: cats, products: prods, variants, modifier_groups, modifiers, tax_groups } = response.data
+      const { categories: cats, products: prods, variants, modifier_groups, modifiers } = response.data
 
       // Map modifiers to groups
       const groupsWithModifiers = (modifier_groups || []).map((g: ModifierGroup) => ({
@@ -50,7 +59,6 @@ export default function CafeSell() {
 
       setCategories(cats)
       setProducts(productsWithVariants)
-      setTaxGroups(tax_groups || [])
     } catch (error) {
       console.error('Failed to fetch menu:', error)
     }
@@ -93,6 +101,7 @@ export default function CafeSell() {
       const orderResponse = await api.post('/orders', {
         shift_id: shift.id,
         type: 'TAKEOUT',
+        tax_type: taxType,
         items: orderItems,
       })
 
@@ -114,6 +123,10 @@ export default function CafeSell() {
     }
   }
 
+  const taxInfo = calculateTaxByType(storeSettings)
+  const currentSubtotal = subtotal()
+  const total = grandTotal(storeSettings)
+
   return (
     <div className="h-full flex">
       {/* Product Grid */}
@@ -132,7 +145,6 @@ export default function CafeSell() {
         <Cart
           onCheckout={handleCheckout}
           isProcessing={isProcessing}
-          taxGroups={taxGroups}
         />
       </div>
 
@@ -149,9 +161,9 @@ export default function CafeSell() {
       {/* Payment Sheet */}
       {showPayment && (
         <PaymentSheet
-          total={grandTotal(taxGroups)}
-          subtotal={subtotal()}
-          taxLines={calculateTax(taxGroups).lines}
+          total={total}
+          subtotal={currentSubtotal}
+          taxLines={taxInfo.lines.map(l => ({ name: l.name, amount: l.amount }))}
           onClose={() => setShowPayment(false)}
           onPayment={handlePayment}
         />

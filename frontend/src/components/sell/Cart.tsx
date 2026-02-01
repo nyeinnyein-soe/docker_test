@@ -1,31 +1,31 @@
 import { useCartStore } from '@/stores/cart'
+import { useConfigStore, TAX_TYPE_OPTIONS } from '@/stores/config'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
-import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react'
-import type { TaxGroup } from '@/types'
+import { ShoppingCart, Plus, Minus, Trash2, ChevronDown } from 'lucide-react'
+import type { TaxType } from '@/types'
 
 interface CartProps {
   onCheckout: () => void
   isProcessing?: boolean
   checkoutLabel?: string
-  taxGroups?: TaxGroup[]
 }
 
 export default function Cart({
   onCheckout,
   isProcessing = false,
   checkoutLabel = 'Checkout',
-  taxGroups = [],
 }: CartProps) {
-  const { items, updateQuantity, removeItem, clearCart, subtotal, itemCount, calculateTax } = useCartStore()
+  const { items, updateQuantity, removeItem, clearCart, subtotal, itemCount, taxType, setTaxType, calculateTaxByType } = useCartStore()
+  const { storeSettings } = useConfigStore()
 
-  const taxInfo = calculateTax(taxGroups)
+  const taxInfo = calculateTaxByType(storeSettings)
   const currentSubtotal = subtotal()
-  // Adjust subtotal if taxes are exclusive
+  
+  // Calculate total based on tax info
   const total = currentSubtotal + taxInfo.lines.reduce((sum, line) => {
-    // Find if this tax is inclusive
-    const isInclusive = taxGroups.some(g => g.taxes.some(t => t.name === line.name && t.is_inclusive))
-    return isInclusive ? sum : sum + line.amount
+    // Only add exclusive taxes to the total
+    return line.isInclusive ? sum : sum + line.amount
   }, 0)
 
   return (
@@ -121,6 +121,25 @@ export default function Cart({
 
       {/* Cart Footer */}
       <div className="border-t p-4 space-y-3 bg-secondary/5">
+        {/* Tax Type Selector */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Tax Type</label>
+          <div className="relative">
+            <select
+              value={taxType}
+              onChange={(e) => setTaxType(e.target.value as TaxType)}
+              className="w-full h-10 px-3 pr-8 rounded-lg border border-input bg-background text-sm font-medium appearance-none cursor-pointer"
+            >
+              {TAX_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
+
         <div className="space-y-1">
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">Subtotal</span>
@@ -129,7 +148,9 @@ export default function Cart({
           
           {taxInfo.lines.map((line, i) => (
             <div key={i} className="flex justify-between items-center text-xs">
-              <span className="text-muted-foreground">{line.name}</span>
+              <span className="text-muted-foreground">
+                {line.name} {line.isInclusive && '(incl.)'}
+              </span>
               <span>{formatCurrency(line.amount)}</span>
             </div>
           ))}

@@ -17,6 +17,8 @@ class OrderItem extends Model
         'unit_price',
         'unit_cost',
         'total_line_amount',
+        'discount_amount',
+        'subtotal_after_discount',
         'kitchen_status',
         'is_voided',
         'void_reason_id',
@@ -25,9 +27,11 @@ class OrderItem extends Model
     protected function casts(): array
     {
         return [
-            'unit_price' => 'decimal:2',
-            'unit_cost' => 'decimal:2',
-            'total_line_amount' => 'decimal:2',
+            'unit_price' => 'integer',
+            'unit_cost' => 'integer',
+            'total_line_amount' => 'integer',
+            'discount_amount' => 'integer',
+            'subtotal_after_discount' => 'integer',
             'is_voided' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

@@ -21,17 +21,20 @@ export default function PaymentSheet({ total, subtotal, taxLines = [], onClose, 
   const [amount, setAmount] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const paymentAmount = amount ? parseFloat(amount) : total
   const change = method === 'CASH' ? Math.max(0, paymentAmount - total) : 0
 
   const handlePayment = async () => {
     setIsProcessing(true)
+    setError(null)
     try {
       await onPayment(method, method === 'CASH' ? paymentAmount : total)
       setIsComplete(true)
-    } catch (error) {
-      console.error('Payment failed:', error)
+    } catch (err: any) {
+      console.error('Payment failed:', err)
+      setError(err?.response?.data?.message || 'Payment failed. Please try again.')
     } finally {
       setIsProcessing(false)
     }
@@ -161,6 +164,13 @@ export default function PaymentSheet({ total, subtotal, taxLines = [], onClose, 
                 {method === 'CARD' ? 'Tap or insert card' : 'Scan QR code'}
               </p>
               <p className="text-2xl font-bold">{formatCurrency(total)}</p>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
+              {error}
             </div>
           )}
 

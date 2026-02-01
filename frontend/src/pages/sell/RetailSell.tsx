@@ -1,31 +1,40 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
+import { useConfigStore } from '@/stores/config'
 import ProductGrid from '@/components/sell/ProductGrid'
 import Cart from '@/components/sell/Cart'
 import PaymentSheet from '@/components/sell/PaymentSheet'
 import api from '@/lib/api'
-import type { Category, Product, TaxGroup } from '@/types'
+import type { Category, Product } from '@/types'
 
 export default function RetailSell() {
   const { shift } = useAuthStore()
-  const { items, addItem, clearCart, subtotal } = useCartStore()
+  const { items, addItem, clearCart, subtotal, taxType, setTaxType, calculateTaxByType, grandTotal } = useCartStore()
+  const { storeSettings, fetchStoreSettings } = useConfigStore()
 
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [taxGroups, setTaxGroups] = useState<TaxGroup[]>([])
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [showPayment, setShowPayment] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
     fetchMenu()
+    fetchStoreSettings()
   }, [])
+
+  // Set default tax type from store settings
+  useEffect(() => {
+    if (storeSettings && taxType === 'NONE') {
+      setTaxType(storeSettings.default_tax_type)
+    }
+  }, [storeSettings])
 
   const fetchMenu = async () => {
     try {
       const response = await api.get('/sync/menu')
-      const { categories: cats, products: prods, variants, tax_groups } = response.data
+      const { categories: cats, products: prods, variants } = response.data
 
       const productsWithVariants = prods.map((p: Product) => ({
         ...p,
@@ -34,7 +43,6 @@ export default function RetailSell() {
 
       setCategories(cats)
       setProducts(productsWithVariants)
-      setTaxGroups(tax_groups || [])
     } catch (error) {
       console.error('Failed to fetch menu:', error)
     }
@@ -67,19 +75,16 @@ export default function RetailSell() {
       const orderResponse = await api.post('/orders', {
         shift_id: shift.id,
         type: 'TAKEOUT',
+        tax_type: taxType,
         items: orderItems,
       })
 
       const order = orderResponse.data.data
 
-      // Get terminal (use first available)
-      const terminalResponse = await api.get('/sync/menu')
-      const terminal = terminalResponse.data?.terminal || { uuid: 'default' }
-
       // Process payment
       await api.post(`/orders/${order.uuid}/pay`, {
         shift_id: shift.id,
-        terminal_uuid: terminal.uuid || 'default',
+        terminal_uuid: 'default',
         method: method,
         amount: parseFloat(order.grand_total),
       })
@@ -97,6 +102,10 @@ export default function RetailSell() {
   const handlePaymentClose = () => {
     setShowPayment(false)
   }
+
+  const taxInfo = calculateTaxByType(storeSettings)
+  const currentSubtotal = subtotal()
+  const total = grandTotal(storeSettings)
 
   return (
     <div className="h-full flex">
@@ -116,16 +125,15 @@ export default function RetailSell() {
         <Cart
           onCheckout={handleCheckout}
           isProcessing={isProcessing}
-          taxGroups={taxGroups}
         />
       </div>
 
       {/* Payment Sheet */}
       {showPayment && (
         <PaymentSheet
-          total={grandTotal(taxGroups)}
-          subtotal={subtotal()}
-          taxLines={calculateTax(taxGroups).lines}
+          total={total}
+          subtotal={currentSubtotal}
+          taxLines={taxInfo.lines.map(l => ({ name: l.name, amount: l.amount }))}
           onClose={handlePaymentClose}
           onPayment={handlePayment}
         />

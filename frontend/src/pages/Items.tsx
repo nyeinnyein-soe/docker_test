@@ -9,13 +9,13 @@ import { Search, Plus, Edit, Trash2, X, Save, Loader2, Layers, FolderTree, Slide
 import ConfirmModal from '@/components/common/ConfirmModal'
 import AlertModal from '@/components/common/AlertModal'
 import api from '@/lib/api'
-import type { Category, Product, ProductVariant, TaxGroup } from '@/types'
+import type { Category, Product, ProductVariant } from '@/types'
 
 interface ProductFormData {
   name: string
   description: string
   category_id: number | null
-  tax_group_id: number | null
+  is_taxable: boolean
   price: string
   cost: string
 }
@@ -40,7 +40,6 @@ export default function Items() {
   const [activeTab, setActiveTab] = useState<'basic' | 'variants' | 'modifiers'>('basic')
   const [productVariants, setProductVariants] = useState<ProductVariant[]>([])
   const [modifierGroups, setModifierGroups] = useState<any[]>([])
-  const [taxGroups, setTaxGroups] = useState<TaxGroup[]>([])
   const [assignedModifierGroupIds, setAssignedModifierGroupIds] = useState<number[]>([])
   const [showVariantForm, setShowVariantForm] = useState(false)
   const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null)
@@ -72,20 +71,17 @@ export default function Items() {
     setIsLoading(true)
     try {
       // Use dedicated endpoints for management - more reliable than sync endpoint
-      const [productsResponse, categoriesResponse, taxGroupsResponse] = await Promise.all([
+      const [productsResponse, categoriesResponse] = await Promise.all([
         api.get('/products'),
         api.get('/categories'),
-        api.get('/tax-groups').catch(() => ({ data: { data: [] } })) // Tax groups optional
       ])
 
       const prods = productsResponse.data.data || []
       const cats = categoriesResponse.data.data || []
-      const taxGroups = taxGroupsResponse.data.data || []
 
       // Products already come with variants loaded from the API
       setCategories(cats)
       setProducts(prods)
-      setTaxGroups(taxGroups)
     } catch (error: any) {
       console.error('Failed to fetch menu:', error)
       const errorMessage = error?.response?.data?.message || 'Failed to load menu items'
@@ -113,19 +109,11 @@ export default function Items() {
       name: '',
       description: '',
       category_id: categories[0]?.id || null,
-      tax_group_id: null,
+      is_taxable: true, // Default to taxable
       price: '',
       cost: '',
     })
     setShowForm(true)
-
-    // Fetch tax groups for new product as well
-    try {
-      const response = await api.get('/tax-groups')
-      setTaxGroups(response.data.data || [])
-    } catch (error) {
-      console.error('Failed to fetch tax groups:', error)
-    }
   }
 
   const handleEditProduct = async (product: Product) => {
@@ -134,7 +122,7 @@ export default function Items() {
       name: product.name,
       description: product.description || '',
       category_id: product.category_id,
-      tax_group_id: product.tax_group_id || null,
+      is_taxable: product.is_taxable ?? true,
       price: product.variants[0]?.price || '',
       cost: product.variants[0]?.cost || '',
     })
@@ -142,15 +130,13 @@ export default function Items() {
     setActiveTab('basic')
     setShowForm(true)
     
-    // Fetch modifier groups, product modifiers, and tax groups
+    // Fetch modifier groups and product modifiers
     try {
-      const [groupsResponse, productResponse, taxGroupsResponse] = await Promise.all([
+      const [groupsResponse, productResponse] = await Promise.all([
         api.get('/modifier-groups'),
         api.get(`/products/${product.id}`),
-        api.get('/tax-groups')
       ])
       setModifierGroups(groupsResponse.data.data || [])
-      setTaxGroups(taxGroupsResponse.data.data || [])
       const assignedGroups = (productResponse.data.data.modifier_groups || []).map((g: any) => g.id)
       setAssignedModifierGroupIds(assignedGroups)
     } catch (error) {
@@ -192,7 +178,7 @@ export default function Items() {
           name: formData.name,
           description: formData.description,
           category_id: formData.category_id,
-          tax_group_id: formData.tax_group_id,
+          is_taxable: formData.is_taxable,
           variants: [{
             id: editingProduct.variants[0]?.id,
             name: 'Default',
@@ -205,7 +191,7 @@ export default function Items() {
           name: formData.name,
           description: formData.description,
           category_id: formData.category_id,
-          tax_group_id: formData.tax_group_id,
+          is_taxable: formData.is_taxable,
           variants: [{
             name: 'Default',
             price: parseFloat(formData.price),
@@ -614,19 +600,44 @@ export default function Items() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Tax Group</label>
-                    <select
-                      value={formData.tax_group_id || ''}
-                      onChange={(e) => setFormData({ ...formData, tax_group_id: e.target.value ? parseInt(e.target.value) : null })}
-                      className="w-full h-12 px-4 rounded-lg border border-input bg-background"
-                    >
-                      <option value="">No Tax</option>
-                      {taxGroups.map((group) => (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="text-sm font-medium">Tax Setting</label>
+                    <div className="flex gap-4 mt-2">
+                      <label
+                        className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                          !formData.is_taxable
+                            ? 'border-primary bg-primary/5'
+                            : 'border-input hover:border-primary/50'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="is_taxable"
+                          checked={!formData.is_taxable}
+                          onChange={() => setFormData({ ...formData, is_taxable: false })}
+                          className="sr-only"
+                        />
+                        <span className="font-medium">No Tax</span>
+                      </label>
+                      <label
+                        className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                          formData.is_taxable
+                            ? 'border-primary bg-primary/5'
+                            : 'border-input hover:border-primary/50'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="is_taxable"
+                          checked={formData.is_taxable}
+                          onChange={() => setFormData({ ...formData, is_taxable: true })}
+                          className="sr-only"
+                        />
+                        <span className="font-medium">Tax Included</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Tax Included items will be taxed based on the Tax Type selected at checkout.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

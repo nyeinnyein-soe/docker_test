@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductVariantController;
 use App\Http\Controllers\Api\ShiftController;
+use App\Http\Controllers\Api\StoreSettingsController;
 use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\TaxGroupController;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,7 @@ Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
     Route::post('{uuid}/pay', [OrderController::class, 'pay']);
     Route::post('{uuid}/confirm', [OrderController::class, 'confirm']);
     Route::post('{uuid}/void', [OrderController::class, 'void']);
+    Route::put('{uuid}/tax', [OrderController::class, 'updateTax']);
 });
 
 Route::middleware('auth:sanctum')->prefix('products')->group(function () {
@@ -112,6 +114,11 @@ Route::middleware('auth:sanctum')->prefix('floor')->group(function () {
 Route::middleware('auth:sanctum')->prefix('sync')->group(function () {
     Route::get('menu', [SyncController::class, 'menu']);
     Route::get('customers', [SyncController::class, 'customers']);
+});
+
+Route::middleware('auth:sanctum')->prefix('store')->group(function () {
+    Route::get('settings', [StoreSettingsController::class, 'show']);
+    Route::put('settings', [StoreSettingsController::class, 'update']);
 });
 
 

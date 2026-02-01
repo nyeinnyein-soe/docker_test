@@ -15,6 +15,7 @@ import Modifiers from '@/pages/Modifiers'
 import Taxes from '@/pages/Taxes'
 import Shift from '@/pages/Shift'
 import Settings from '@/pages/Settings'
+import StoreSettings from '@/pages/StoreSettings'
 
 // Sell pages
 import SellPage from '@/pages/sell/SellPage'
@@ -99,6 +100,7 @@ function App() {
           <Route path="taxes" element={<Taxes />} />
           <Route path="shift" element={<Shift />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="settings/store" element={<StoreSettings />} />
         </Route>
 
         {/* Catch all */}

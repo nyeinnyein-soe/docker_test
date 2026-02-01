@@ -23,8 +23,8 @@ class ProductVariant extends Model
     protected function casts(): array
     {
         return [
-            'price' => 'decimal:2',
-            'cost' => 'decimal:2',
+            'price' => 'integer',
+            'cost' => 'integer',
             'is_default' => 'boolean',
             'is_active' => 'boolean',
             'deleted_at' => 'datetime',

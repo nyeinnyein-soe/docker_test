@@ -24,15 +24,12 @@ class Payment extends Model
         'parent_payment_id',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'amount' => 'decimal:2',
-            'tip_amount' => 'decimal:2',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'amount' => 'integer',
+        'tip_amount' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
     public function order()
     {

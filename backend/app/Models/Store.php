@@ -15,6 +15,11 @@ class Store extends Model
         'currency_code',
         'time_zone',
         'tax_registration_no',
+        'commercial_tax_rate',
+        'commercial_tax_inclusive',
+        'service_charge_rate',
+        'service_charge_inclusive',
+        'default_tax_type',
         'is_active',
         'pos_mode',
         'setup_complete',
@@ -25,6 +30,10 @@ class Store extends Model
         return [
             'is_active' => 'boolean',
             'setup_complete' => 'boolean',
+            'commercial_tax_rate' => 'decimal:4',
+            'commercial_tax_inclusive' => 'boolean',
+            'service_charge_rate' => 'decimal:4',
+            'service_charge_inclusive' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

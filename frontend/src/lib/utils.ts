@@ -7,19 +7,11 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(amount: number | string, currency = 'MMK'): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount
-  
-  if (currency === 'MMK') {
-    // Myanmar Kyat - format with commas and K suffix
-    return new Intl.NumberFormat('my-MM', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(num) + ' K'
-  }
-  
+
   return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency,
+    style: 'decimal',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(num)
 }
 
