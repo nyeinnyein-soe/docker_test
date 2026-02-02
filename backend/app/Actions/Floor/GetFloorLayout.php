@@ -10,11 +10,15 @@ class GetFloorLayout
     public function __invoke(int $storeId): array
     {
         $sections = FloorSection::where('store_id', $storeId)
-            ->with(['tables' => function ($query) {
-                $query->with(['activeSession' => function ($q) {
-                    $q->whereIn('status', ['ACTIVE', 'PAYING']);
-                }]);
-            }])
+            ->with([
+                'tables' => function ($query) {
+                    $query->with([
+                        'activeSession' => function ($q) {
+                            $q->whereIn('status', ['ACTIVE', 'PAYING']);
+                        }
+                    ]);
+                }
+            ])
             ->get();
 
         // Transform sections to floors format expected by frontend
@@ -45,11 +49,11 @@ class GetFloorLayout
                     return [
                         'id' => $table->id,
                         'uuid' => (string) Str::uuid(), // Generate UUID for frontend compatibility
-                        'floor_id' => $section->id, // Use section_id as floor_id
+                        'section_id' => $section->id, // Match frontend expected section_id
                         'name' => $table->name,
-                        'capacity' => 4, // Default capacity, can be made configurable later
-                        'pos_x' => $table->x_pos,
-                        'pos_y' => $table->y_pos,
+                        'capacity' => $table->capacity, // Use actual capacity from DB
+                        'x_pos' => $table->x_pos,
+                        'y_pos' => $table->y_pos,
                         'width' => 100, // Default width
                         'height' => 100, // Default height
                         'shape' => 'SQUARE', // Default shape

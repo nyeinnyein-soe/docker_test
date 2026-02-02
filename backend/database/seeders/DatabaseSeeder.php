@@ -253,24 +253,24 @@ class DatabaseSeeder extends Seeder
         Modifier::query()->firstOrCreate(
             ['group_id' => $milkGroup->id, 'name' => 'Oat Milk'],
             [
-                'price_extra' => 0.50,
-                'cost_extra' => 0.20,
+                'price_extra' => 500,
+                'cost_extra' => 200,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $milkGroup->id, 'name' => 'Almond Milk'],
             [
-                'price_extra' => 0.50,
-                'cost_extra' => 0.20,
+                'price_extra' => 500,
+                'cost_extra' => 200,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $milkGroup->id, 'name' => 'Soy Milk'],
             [
-                'price_extra' => 0.50,
-                'cost_extra' => 0.20,
+                'price_extra' => 500,
+                'cost_extra' => 200,
             ]
         );
 
@@ -293,16 +293,16 @@ class DatabaseSeeder extends Seeder
         Modifier::query()->firstOrCreate(
             ['group_id' => $sizeGroup->id, 'name' => 'Medium'],
             [
-                'price_extra' => 1.00,
-                'cost_extra' => 0.30,
+                'price_extra' => 1000,
+                'cost_extra' => 300,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $sizeGroup->id, 'name' => 'Large'],
             [
-                'price_extra' => 2.00,
-                'cost_extra' => 0.60,
+                'price_extra' => 2000,
+                'cost_extra' => 600,
             ]
         );
 
@@ -317,40 +317,40 @@ class DatabaseSeeder extends Seeder
         Modifier::query()->firstOrCreate(
             ['group_id' => $toppingsGroup->id, 'name' => 'Extra Cheese'],
             [
-                'price_extra' => 1.50,
-                'cost_extra' => 0.50,
+                'price_extra' => 1500,
+                'cost_extra' => 500,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $toppingsGroup->id, 'name' => 'Bacon'],
             [
-                'price_extra' => 2.00,
-                'cost_extra' => 1.00,
+                'price_extra' => 2000,
+                'cost_extra' => 1000,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $toppingsGroup->id, 'name' => 'Mushrooms'],
             [
-                'price_extra' => 1.00,
-                'cost_extra' => 0.30,
+                'price_extra' => 1000,
+                'cost_extra' => 300,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $toppingsGroup->id, 'name' => 'Onions'],
             [
-                'price_extra' => 0.50,
-                'cost_extra' => 0.10,
+                'price_extra' => 500,
+                'cost_extra' => 100,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $toppingsGroup->id, 'name' => 'Pickles'],
             [
-                'price_extra' => 0.50,
-                'cost_extra' => 0.10,
+                'price_extra' => 500,
+                'cost_extra' => 100,
             ]
         );
 
@@ -365,32 +365,32 @@ class DatabaseSeeder extends Seeder
         Modifier::query()->firstOrCreate(
             ['group_id' => $extrasGroup->id, 'name' => 'Extra Shot'],
             [
-                'price_extra' => 1.00,
-                'cost_extra' => 0.30,
+                'price_extra' => 1000,
+                'cost_extra' => 300,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $extrasGroup->id, 'name' => 'Whipped Cream'],
             [
-                'price_extra' => 0.75,
-                'cost_extra' => 0.20,
+                'price_extra' => 750,
+                'cost_extra' => 200,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $extrasGroup->id, 'name' => 'Caramel Syrup'],
             [
-                'price_extra' => 0.50,
-                'cost_extra' => 0.15,
+                'price_extra' => 500,
+                'cost_extra' => 150,
             ]
         );
 
         Modifier::query()->firstOrCreate(
             ['group_id' => $extrasGroup->id, 'name' => 'Chocolate Syrup'],
             [
-                'price_extra' => 0.50,
-                'cost_extra' => 0.15,
+                'price_extra' => 500,
+                'cost_extra' => 150,
             ]
         );
 
@@ -413,8 +413,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'COF-SM',
-                'price' => 3.50,
-                'cost' => 1.00,
+                'price' => 3500,
+                'cost' => 1000,
                 'is_default' => true,
                 'is_active' => true,
             ]
@@ -425,8 +425,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'COF-LG',
-                'price' => 4.50,
-                'cost' => 1.30,
+                'price' => 4500,
+                'cost' => 1300,
                 'is_default' => false,
                 'is_active' => true,
             ]
@@ -457,8 +457,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'TEA-SM',
-                'price' => 2.50,
-                'cost' => 0.50,
+                'price' => 2500,
+                'cost' => 500,
                 'is_default' => true,
                 'is_active' => true,
             ]
@@ -469,8 +469,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'TEA-LG',
-                'price' => 3.50,
-                'cost' => 0.70,
+                'price' => 3500,
+                'cost' => 700,
                 'is_default' => false,
                 'is_active' => true,
             ]
@@ -499,8 +499,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'LAT-SM',
-                'price' => 4.50,
-                'cost' => 1.20,
+                'price' => 4500,
+                'cost' => 1200,
                 'is_default' => true,
                 'is_active' => true,
             ]
@@ -511,8 +511,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'LAT-LG',
-                'price' => 5.50,
-                'cost' => 1.50,
+                'price' => 5500,
+                'cost' => 1500,
                 'is_default' => false,
                 'is_active' => true,
             ]
@@ -543,8 +543,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'MS-SM',
-                'price' => 5.00,
-                'cost' => 1.50,
+                'price' => 5000,
+                'cost' => 1500,
                 'is_default' => true,
                 'is_active' => true,
             ]
@@ -555,8 +555,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'MS-LG',
-                'price' => 6.50,
-                'cost' => 2.00,
+                'price' => 6500,
+                'cost' => 2000,
                 'is_default' => false,
                 'is_active' => true,
             ]
@@ -585,8 +585,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'SM-SM',
-                'price' => 6.00,
-                'cost' => 2.00,
+                'price' => 6000,
+                'cost' => 2000,
                 'is_default' => true,
                 'is_active' => true,
             ]
@@ -597,8 +597,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'SM-LG',
-                'price' => 7.50,
-                'cost' => 2.50,
+                'price' => 7500,
+                'cost' => 2500,
                 'is_default' => false,
                 'is_active' => true,
             ]
@@ -627,8 +627,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'BUR-001',
-                'price' => 8.50,
-                'cost' => 3.00,
+                'price' => 8500,
+                'cost' => 3000,
                 'is_default' => true,
             ]
         );
@@ -655,8 +655,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'PIZ-SM',
-                'price' => 12.00,
-                'cost' => 4.00,
+                'price' => 12000,
+                'cost' => 4000,
                 'is_default' => true,
                 'is_active' => true,
             ]
@@ -667,8 +667,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'PIZ-MD',
-                'price' => 16.00,
-                'cost' => 5.50,
+                'price' => 16000,
+                'cost' => 5500,
                 'is_default' => false,
                 'is_active' => true,
             ]
@@ -679,8 +679,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'PIZ-LG',
-                'price' => 20.00,
-                'cost' => 7.00,
+                'price' => 20000,
+                'cost' => 7000,
                 'is_default' => false,
                 'is_active' => true,
             ]
@@ -708,8 +708,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'PAS-001',
-                'price' => 10.00,
-                'cost' => 3.50,
+                'price' => 10000,
+                'cost' => 3500,
                 'is_default' => true,
             ]
         );
@@ -733,8 +733,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'CAK-001',
-                'price' => 4.50,
-                'cost' => 1.50,
+                'price' => 4500,
+                'cost' => 1500,
                 'is_default' => true,
             ]
         );
@@ -757,8 +757,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'ICE-1',
-                'price' => 3.00,
-                'cost' => 1.00,
+                'price' => 3000,
+                'cost' => 1000,
                 'is_default' => true,
                 'is_active' => true,
             ]
@@ -769,8 +769,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'ICE-2',
-                'price' => 5.00,
-                'cost' => 1.80,
+                'price' => 5000,
+                'cost' => 1800,
                 'is_default' => false,
                 'is_active' => true,
             ]
@@ -799,8 +799,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'FRI-SM',
-                'price' => 3.00,
-                'cost' => 0.80,
+                'price' => 3000,
+                'cost' => 800,
                 'is_default' => true,
                 'is_active' => true,
             ]
@@ -811,8 +811,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'FRI-LG',
-                'price' => 4.50,
-                'cost' => 1.20,
+                'price' => 4500,
+                'cost' => 1200,
                 'is_default' => false,
                 'is_active' => true,
             ]
@@ -836,8 +836,8 @@ class DatabaseSeeder extends Seeder
             [
                 'uuid' => (string) Str::uuid(),
                 'sku' => 'CHP-001',
-                'price' => 2.50,
-                'cost' => 0.60,
+                'price' => 2500,
+                'cost' => 600,
                 'is_default' => true,
             ]
         );
@@ -858,6 +858,7 @@ class DatabaseSeeder extends Seeder
             DiningTable::query()->firstOrCreate(
                 ['section_id' => $mainFloor->id, 'name' => "Table $i"],
                 [
+                    'capacity' => ($i <= 4) ? 4 : 2,
                     'x_pos' => (($i - 1) % 4) * 150 + 50,
                     'y_pos' => (intval(($i - 1) / 4)) * 150 + 50,
                 ]
@@ -868,6 +869,7 @@ class DatabaseSeeder extends Seeder
             DiningTable::query()->firstOrCreate(
                 ['section_id' => $outdoorFloor->id, 'name' => "Outdoor $i"],
                 [
+                    'capacity' => 4,
                     'x_pos' => (($i - 1) % 2) * 200 + 50,
                     'y_pos' => (intval(($i - 1) / 2)) * 200 + 50,
                 ]

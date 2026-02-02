@@ -183,11 +183,11 @@ export interface Floor {
 export interface Table {
   id: number
   uuid: string
-  floor_id: number
+  section_id: number
   name: string
   capacity: number
-  pos_x: number
-  pos_y: number
+  x_pos: number
+  y_pos: number
   width: number
   height: number
   shape: 'SQUARE' | 'ROUND' | 'RECTANGLE'

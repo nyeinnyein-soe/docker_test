@@ -13,6 +13,7 @@ class DiningTableController extends Controller
         $data = $request->validate([
             'section_id' => ['required', 'integer', 'exists:floor_sections,id'],
             'name' => ['required', 'string', 'max:20'],
+            'capacity' => ['nullable', 'integer', 'min:1'],
             'x_pos' => ['nullable', 'integer'],
             'y_pos' => ['nullable', 'integer'],
         ]);
@@ -20,6 +21,7 @@ class DiningTableController extends Controller
         $table = DiningTable::create([
             'section_id' => $data['section_id'],
             'name' => $data['name'],
+            'capacity' => $data['capacity'] ?? 4,
             'x_pos' => $data['x_pos'] ?? 0,
             'y_pos' => $data['y_pos'] ?? 0,
         ]);
@@ -31,6 +33,7 @@ class DiningTableController extends Controller
     {
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:20'],
+            'capacity' => ['sometimes', 'integer', 'min:1'],
             'x_pos' => ['nullable', 'integer'],
             'y_pos' => ['nullable', 'integer'],
         ]);

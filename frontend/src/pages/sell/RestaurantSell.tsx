@@ -9,17 +9,18 @@ import ModifierModal from '@/components/sell/ModifierModal'
 import BillModal from '@/components/sell/BillModal'
 import FloorMap from '@/components/sell/FloorMap'
 import AlertModal from '@/components/common/AlertModal'
+import GuestSelectionModal from '@/components/sell/GuestSelectionModal'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Users, Receipt, ShoppingBag, X, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Receipt, X } from 'lucide-react'
 import api from '@/lib/api'
-import { cn, formatCurrency } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import type { Category, Product, Floor, Table, ProductVariant, Modifier } from '@/types'
 
 type View = 'floor' | 'order'
 
 export default function RestaurantSell() {
   const { shift } = useAuthStore()
-  const { items, addItem, clearCart, setTableSession, setOrderType, taxType, setTaxType, subtotal, grandTotal, calculateTaxByType, itemCount } = useCartStore()
+  const { items, addItem, clearCart, setTableSession, setOrderType, taxType, setTaxType, grandTotal, itemCount } = useCartStore()
   const { storeSettings, fetchStoreSettings } = useConfigStore()
 
   const [view, setView] = useState<View>('floor')
@@ -45,6 +46,9 @@ export default function RestaurantSell() {
     variant: 'error',
   })
   const [showMobileCart, setShowMobileCart] = useState(false)
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false)
+  const [pendingTable, setPendingTable] = useState<Table | null>(null)
+  const [isLoadingFloors, setIsLoadingFloors] = useState(true)
 
   useEffect(() => {
     fetchFloors()
@@ -60,6 +64,7 @@ export default function RestaurantSell() {
   }, [storeSettings])
 
   const fetchFloors = async () => {
+    setIsLoadingFloors(true)
     try {
       const response = await api.get('/floor')
       // Backend returns { data: [...] } where data is array of floors
@@ -72,6 +77,8 @@ export default function RestaurantSell() {
     } catch (error) {
       console.error('Failed to fetch floors:', error)
       setFloors([])
+    } finally {
+      setIsLoadingFloors(false)
     }
   }
 
@@ -108,20 +115,30 @@ export default function RestaurantSell() {
 
   const handleTableSelect = (table: Table) => {
     if (table.status === 'AVAILABLE') {
-      // Just select the table - session will be created when first order is placed
-      setSelectedTable(table)
-      setTableSession(null)
-      setCurrentSessionId(null)
-      setOrderType('DINE_IN')
-      setView('order')
+      // Open guest selection modal first
+      setPendingTable(table)
+      setIsGuestModalOpen(true)
     } else if (table.active_session) {
-      // Continue existing session
+      // Continue existing session immediately
       setSelectedTable(table)
       setTableSession(table.active_session.id)
       setCurrentSessionId(table.active_session.id)
       setOrderType('DINE_IN')
       setView('order')
     }
+  }
+
+  const handleConfirmGuests = (count: number) => {
+    if (!pendingTable) return
+
+    setGuestCount(count)
+    setSelectedTable(pendingTable)
+    setTableSession(null)
+    setCurrentSessionId(null)
+    setOrderType('DINE_IN')
+    setView('order')
+    setIsGuestModalOpen(false)
+    setPendingTable(null)
   }
 
   const handleBackToFloor = async () => {
@@ -275,50 +292,26 @@ export default function RestaurantSell() {
   // Floor view
   if (view === 'floor') {
     return (
-      <div className="h-full flex flex-col md:flex-row overflow-hidden">
-        <div className="flex-1 overflow-hidden">
+      <div className="h-full flex flex-col overflow-hidden bg-slate-50">
+        <div className="flex-1 overflow-hidden relative">
           <FloorMap
             floors={floors}
             selectedFloor={selectedFloor}
             onFloorSelect={setSelectedFloor}
             onTableSelect={handleTableSelect}
+            isLoading={isLoadingFloors}
           />
         </div>
 
-        {/* Guest count selector */}
-        <div className="w-full md:w-64 border-t md:border-t-0 md:border-l bg-white p-4 overflow-y-auto">
-          <h3 className="font-semibold mb-4">New Table</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm text-muted-foreground">Guests</label>
-              <div className="flex items-center gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setGuestCount(Math.max(1, guestCount - 1))}
-                >
-                  -
-                </Button>
-                <div className="flex-1 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <Users className="w-5 h-5" />
-                    <span className="text-2xl font-bold">{guestCount}</span>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setGuestCount(guestCount + 1)}
-                >
-                  +
-                </Button>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Select an available table to start a new order
-            </p>
-          </div>
-        </div>
+        <GuestSelectionModal
+          open={isGuestModalOpen}
+          table={pendingTable}
+          onClose={() => {
+            setIsGuestModalOpen(false)
+            setPendingTable(null)
+          }}
+          onConfirm={handleConfirmGuests}
+        />
       </div>
     )
   }

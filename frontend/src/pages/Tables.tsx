@@ -2,23 +2,14 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Plus, Edit, Trash2, X, Save, Loader2, MapPin } from 'lucide-react'
+import { Plus, Edit, Trash2, X, Save, Loader2, MapPin, Users } from 'lucide-react'
 import ConfirmModal from '@/components/common/ConfirmModal'
+import FloorCanvas from '@/components/tables/FloorCanvas'
 import api from '@/lib/api'
+import { cn } from '@/lib/utils'
+import type { Table, Floor as FloorSection } from '@/types'
 
-interface FloorSection {
-  id: number
-  name: string
-  tables: Table[]
-}
-
-interface Table {
-  id: number
-  name: string
-  x_pos: number
-  y_pos: number
-  section_id: number
-}
+// Local interfaces removed as we use global Table from @/types
 
 interface SectionFormData {
   name: string
@@ -27,6 +18,7 @@ interface SectionFormData {
 interface TableFormData {
   section_id: number
   name: string
+  capacity: number
   x_pos: number
   y_pos: number
 }
@@ -43,6 +35,7 @@ export default function Tables() {
   const [tableFormData, setTableFormData] = useState<TableFormData>({
     section_id: 0,
     name: '',
+    capacity: 4,
     x_pos: 0,
     y_pos: 0,
   })
@@ -129,8 +122,9 @@ export default function Tables() {
     setTableFormData({
       section_id: sectionId,
       name: '',
-      x_pos: 0,
-      y_pos: 0,
+      capacity: 4,
+      x_pos: 50,
+      y_pos: 50,
     })
     setShowTableForm(true)
   }
@@ -140,16 +134,18 @@ export default function Tables() {
     setTableFormData({
       section_id: table.section_id,
       name: table.name,
+      capacity: table.capacity,
       x_pos: table.x_pos,
       y_pos: table.y_pos,
     })
     setShowTableForm(true)
   }
 
-  const handleDeleteTable = (table: Table) => {
-    setTableToDelete(table)
-    setShowDeleteTableConfirm(true)
-  }
+  /* Deletion handled via table edit modal or future implementation */
+  // const handleDeleteTable = async (table: Table) => {
+  //   setDeletingTable(table)
+  //   setShowDeleteConfirm(true)
+  // }
 
   const confirmDeleteTable = async () => {
     if (!tableToDelete) return
@@ -161,6 +157,21 @@ export default function Tables() {
       fetchSections()
     } catch (error) {
       console.error('Failed to delete table:', error)
+    }
+  }
+
+  const handleTablePositionUpdate = async (tableId: number, x: number, y: number) => {
+    try {
+      // Optimistic update
+      setSections(prev => prev.map(section => ({
+        ...section,
+        tables: section.tables.map((t: Table) => t.id === tableId ? { ...t, x_pos: x, y_pos: y } : t)
+      })))
+
+      await api.put(`/tables/${tableId}`, { x_pos: x, y_pos: y })
+    } catch (error) {
+      console.error('Failed to update table position:', error)
+      fetchSections() // Rollback
     }
   }
 
@@ -184,85 +195,110 @@ export default function Tables() {
     }
   }
 
-  const currentSection = sections.find((s) => s.id === selectedSection)
+  const currentSection = sections.find((s) => s.id === selectedSection) as any
 
   return (
-    <div className="h-full flex">
-      {/* Sections Sidebar */}
-      <div className="w-64 border-r bg-white flex flex-col">
-        <div className="p-4 border-b">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold">Floors</h2>
-            <Button size="sm" onClick={handleNewSection}>
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
+    <div className="h-full flex flex-col lg:flex-row bg-slate-50/50 overflow-hidden">
+      {/* Sections Sidebar / Tabs */}
+      <div className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r bg-white flex flex-col shrink-0 z-30 shadow-sm lg:shadow-none">
+        <div className="p-4 border-b bg-slate-50/50 lg:bg-white flex items-center justify-between">
+          <h2 className="font-black text-slate-800 uppercase tracking-widest text-xs">Floors</h2>
+          <Button size="sm" onClick={handleNewSection} variant="outline" className="h-8 w-8 p-0 rounded-xl shadow-sm border-slate-200">
+            <Plus className="w-4 h-4" />
+          </Button>
         </div>
-        <div className="flex-1 overflow-y-auto p-2">
+
+        {/* Horizontal scroll for mobile/tablet, vertical for desktop */}
+        <div className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-y-auto p-2 lg:p-3 scrollbar-none gap-2 lg:gap-3 bg-white min-h-[80px] lg:min-h-0">
           {sections.map((section) => (
             <div
               key={section.id}
-              className={`w-full p-3 rounded-lg mb-2 transition-colors ${
+              className={cn(
+                "relative group flex-shrink-0 lg:flex-shrink p-3 lg:p-4 rounded-2xl transition-all duration-300 cursor-pointer min-w-[160px] lg:min-w-0 border",
                 selectedSection === section.id
-                  ? 'bg-primary text-white'
-                  : 'bg-secondary hover:bg-secondary/80'
-              }`}
+                  ? 'bg-primary text-white shadow-xl shadow-primary/20 border-primary scale-[1.02]'
+                  : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-100 hover:border-slate-200 shadow-sm'
+              )}
+              onClick={() => setSelectedSection(section.id)}
             >
-              <button
-                onClick={() => setSelectedSection(section.id)}
-                className="w-full text-left"
-              >
-                <div className="font-medium">{section.name}</div>
-                <div className="text-xs opacity-70">
-                  {section.tables?.length || 0} tables
+              <div className="flex flex-row lg:flex-col justify-between items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-black truncate text-xs lg:text-sm uppercase tracking-wider">{section.name}</div>
+                  <div className={cn(
+                    "text-[10px] font-bold opacity-70",
+                    selectedSection === section.id ? "text-white/80" : "text-slate-400"
+                  )}>
+                    {section.tables?.length || 0} tables
+                  </div>
                 </div>
-              </button>
-              <div className="flex gap-1 mt-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 h-7 text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleEditSection(section)
-                  }}
-                >
-                  <Edit className="w-3 h-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 h-7 text-xs text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleDeleteSection(section)
-                  }}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
+
+                <div className={cn(
+                  "flex gap-1.5 transition-all duration-300",
+                  selectedSection === section.id ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none lg:group-hover:opacity-100 lg:group-hover:translate-x-0 lg:group-hover:pointer-events-auto"
+                )}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-7 w-7 rounded-xl transition-colors",
+                      selectedSection === section.id ? "text-white hover:bg-white/20" : "text-slate-400 hover:bg-slate-100"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleEditSection(section)
+                    }}
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-7 w-7 rounded-xl transition-colors",
+                      selectedSection === section.id ? "text-white hover:bg-white/20" : "text-red-500 hover:bg-red-50"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteSection(section)
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
+
+          {sections.length === 0 && !isLoading && (
+            <div className="p-4 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+              Click + to add<br />your first floor
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Tables Grid */}
-      <div className="flex-1 flex flex-col">
-        <div className="p-4 border-b bg-white">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">
-              {currentSection ? `Tables - ${currentSection.name}` : 'Select a Floor'}
+      {/* Tables Grid area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="px-4 py-3 border-b bg-white/80 backdrop-blur-md z-20 shadow-sm flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-1.5 bg-primary rounded-full" />
+            <h1 className="text-sm lg:text-base font-black text-slate-800 tracking-tight uppercase">
+              {currentSection ? `Floor: ${currentSection.name}` : 'Select a Floor'}
             </h1>
-            {currentSection && (
-              <Button onClick={() => handleNewTable(currentSection.id)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Table
-              </Button>
-            )}
           </div>
+
+          {currentSection && (
+            <Button
+              onClick={() => handleNewTable(currentSection.id)}
+              className="rounded-2xl shadow-lg shadow-primary/20 h-10 px-6 font-black uppercase text-[10px] tracking-widest gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Table</span>
+            </Button>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-hidden p-2 md:p-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -280,33 +316,11 @@ export default function Tables() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-              {currentSection.tables.map((table) => (
-                <Card key={table.id} className="p-4 text-center">
-                  <div className="aspect-square bg-secondary/50 rounded-lg flex items-center justify-center mb-2">
-                    <span className="text-2xl font-bold">{table.name}</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleEditTable(table)}
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => handleDeleteTable(table)}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+            <FloorCanvas
+              tables={currentSection.tables}
+              onTableUpdate={handleTablePositionUpdate}
+              onTableEdit={handleEditTable}
+            />
           )}
         </div>
       </div>
@@ -382,6 +396,19 @@ export default function Tables() {
                   onChange={(e) => setTableFormData({ ...tableFormData, name: e.target.value })}
                   placeholder="e.g., Table 1, T-01"
                 />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Capacity (Guests)</label>
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    min={1}
+                    value={tableFormData.capacity}
+                    onChange={(e) => setTableFormData({ ...tableFormData, capacity: parseInt(e.target.value) || 1 })}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

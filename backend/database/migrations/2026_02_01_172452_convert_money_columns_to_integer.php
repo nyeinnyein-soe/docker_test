@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::table('product_variants', function (Blueprint $table) {
@@ -17,8 +16,6 @@ return new class extends Migration
             $table->bigInteger('unit_price')->change();
             $table->bigInteger('unit_cost')->change();
             $table->bigInteger('total_line_amount')->change();
-            $table->bigInteger('discount_amount')->default(0)->change();
-            $table->bigInteger('subtotal_after_discount')->change();
         });
 
         Schema::table('orders', function (Blueprint $table) {

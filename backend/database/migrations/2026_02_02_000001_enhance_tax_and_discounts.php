@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -16,8 +15,8 @@ return new class extends Migration
         });
 
         Schema::table('order_items', function (Blueprint $table) {
-            $table->decimal('discount_amount', 15, 4)->default(0)->after('total_line_amount');
-            $table->decimal('subtotal_after_discount', 15, 4)->default(0)->after('discount_amount');
+            $table->bigInteger('discount_amount')->default(0)->after('total_line_amount');
+            $table->bigInteger('subtotal_after_discount')->default(0)->after('discount_amount');
         });
     }
 

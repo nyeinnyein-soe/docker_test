@@ -12,6 +12,7 @@ class DiningTable extends Model
     protected $fillable = [
         'section_id',
         'name',
+        'capacity',
         'x_pos',
         'y_pos',
     ];

@@ -46,10 +46,10 @@ export default function AppShell() {
   // Management routes don't require shift, so don't block them
   if (isLoading || (isCheckingShift && isSellRoute)) {
     return (
-      <div className="h-[100dvh] flex items-center justify-center">
+      <div className="h-[100dvh] flex items-center justify-center bg-secondary/30">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-medium">Preparing your workspace...</p>
         </div>
       </div>
     )
@@ -66,7 +66,7 @@ export default function AppShell() {
   // Management routes are always accessible - backend API will handle role-based authorization
 
   return (
-    <div className="fixed inset-0 w-full h-full flex flex-col bg-secondary/30 overflow-hidden">
+    <div className="fixed inset-0 w-full h-full flex flex-col bg-slate-50 overflow-hidden">
       <Header />
       <main className="flex-1 overflow-hidden">
         <Outlet />
