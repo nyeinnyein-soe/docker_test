@@ -70,7 +70,6 @@ export default function BillModal({ tableSessionId, tableName, onClose, onPay }:
 
   const subtotal = orders.reduce((sum, order) => sum + parseFloat(order.subtotal), 0)
   // ... (rest of total calculations)
-  const totalTax = orders.reduce((sum, order) => sum + parseFloat(order.total_tax), 0)
   const totalDiscount = orders.reduce((sum, order) => sum + parseFloat(order.total_discount), 0)
   const total = orders.reduce((sum, order) => sum + parseFloat(order.grand_total), 0)
 

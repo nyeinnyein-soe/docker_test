@@ -192,19 +192,19 @@ export default function Taxes() {
     try {
       const group = groups.find(g => g.id === selectedGroup)
       if (group) {
-        const newTax = {
-          id: editingTax?.id,
+        const newTax: Partial<Tax> = {
           name: taxFormData.name,
-          rate: parseFloat(taxFormData.rate) / 100,
+          rate: (parseFloat(taxFormData.rate) / 100).toString(),
           is_inclusive: taxFormData.is_inclusive,
           priority: taxFormData.priority,
+          tax_group_id: selectedGroup,
         }
 
         let updatedTaxes = [...(group.taxes || [])]
         if (editingTax) {
-          updatedTaxes = updatedTaxes.map(t => t.id === editingTax.id ? { ...t, ...newTax } : t)
+          updatedTaxes = updatedTaxes.map(t => t.id === editingTax.id ? { ...t, ...newTax } as Tax : t)
         } else {
-          updatedTaxes.push(newTax as any)
+          updatedTaxes.push({ ...newTax, id: 0 } as Tax)
         }
 
         await api.put(`/tax-groups/${selectedGroup}`, {
@@ -300,7 +300,7 @@ export default function Taxes() {
                           <div className="flex-1">
                             <span className="font-medium">{tax.name}</span>
                             <span className="text-sm text-muted-foreground ml-2">
-                              {(parseFloat(tax.rate) * 100).toFixed(2)}% 
+                              {(parseFloat(tax.rate) * 100).toFixed(2)}%
                               {tax.is_inclusive ? ' (Inclusive)' : ' (Exclusive)'}
                             </span>
                           </div>

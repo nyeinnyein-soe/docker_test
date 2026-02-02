@@ -10,7 +10,7 @@ import NumPad from '@/components/common/NumPad'
 export default function Shift() {
   const navigate = useNavigate()
   const { employee, shift, shiftStats, closeShift, fetchCurrentShift, isLoading, error } = useAuthStore()
-  
+
   const [showCloseModal, setShowCloseModal] = useState(false)
   const [cashCount, setCashCount] = useState('')
 
@@ -23,7 +23,6 @@ export default function Shift() {
 
     try {
       await closeShift(parseFloat(cashCount))
-      navigate('/open-shift', { replace: true })
     } catch {
       // Error handled by store
     }

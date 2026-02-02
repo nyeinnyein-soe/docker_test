@@ -2,8 +2,7 @@ import { useCartStore } from '@/stores/cart'
 import { useConfigStore, TAX_TYPE_OPTIONS } from '@/stores/config'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, cn } from '@/lib/utils'
-import { ShoppingCart, Plus, Minus, Trash2, ChevronDown } from 'lucide-react'
-import type { TaxType } from '@/types'
+import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react'
 
 interface CartProps {
   onCheckout: () => void

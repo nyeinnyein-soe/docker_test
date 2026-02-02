@@ -24,7 +24,7 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
-  
+
   login: (email: string, pin: string) => Promise<boolean>
   logout: () => Promise<void>
   fetchProfile: () => Promise<void>
@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/auth/login', { email, pin })
           const { token, employee: emp, store_id, role } = response.data.data
-          
+
           // Map backend response to our Employee type
           const employee: Employee = {
             id: emp.id,
@@ -60,17 +60,17 @@ export const useAuthStore = create<AuthState>()(
             role: role?.toUpperCase() || 'CASHIER',
             is_active: true,
           }
-          
+
           localStorage.setItem('auth_token', token)
           set({ employee, isAuthenticated: true, isLoading: false })
-          
+
           // Try to fetch current shift after login
           await get().fetchCurrentShift()
-          
+
           return true
         } catch (error: unknown) {
-          const message = error instanceof Error 
-            ? error.message 
+          const message = error instanceof Error
+            ? error.message
             : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Login failed'
           set({ error: message, isLoading: false })
           return false
@@ -85,11 +85,11 @@ export const useAuthStore = create<AuthState>()(
           // Ignore logout errors
         } finally {
           localStorage.removeItem('auth_token')
-          set({ 
-            employee: null, 
+          set({
+            employee: null,
             shift: null,
-            isAuthenticated: false, 
-            isLoading: false 
+            isAuthenticated: false,
+            isLoading: false
           })
         }
       },
@@ -133,13 +133,13 @@ export const useAuthStore = create<AuthState>()(
       },
 
       closeShift: async (actualCash: number) => {
-        const { shift } = get()
+        const { shift, logout } = get()
         if (!shift) return
 
         set({ isLoading: true, error: null })
         try {
           await api.post(`/shifts/${shift.id}/close`, { actual_cash: actualCash })
-          set({ shift: null, shiftStats: null, isLoading: false })
+          await logout()
         } catch (error: unknown) {
           const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to close shift'
           set({ error: message, isLoading: false })
@@ -151,7 +151,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         employee: state.employee,
         isAuthenticated: state.isAuthenticated,
       }),

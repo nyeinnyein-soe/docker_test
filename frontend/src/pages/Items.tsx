@@ -33,6 +33,7 @@ export default function Items() {
     name: '',
     description: '',
     category_id: null,
+    is_taxable: true,
     price: '',
     cost: '',
   })
@@ -606,8 +607,8 @@ export default function Items() {
                     <div className="flex gap-4 mt-2">
                       <label
                         className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${!formData.is_taxable
-                            ? 'border-primary bg-primary/5'
-                            : 'border-input hover:border-primary/50'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-input hover:border-primary/50'
                           }`}
                       >
                         <input
@@ -621,8 +622,8 @@ export default function Items() {
                       </label>
                       <label
                         className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${formData.is_taxable
-                            ? 'border-primary bg-primary/5'
-                            : 'border-input hover:border-primary/50'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-input hover:border-primary/50'
                           }`}
                       >
                         <input
