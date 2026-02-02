@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency, formatTime } from '@/lib/utils'
-import { Search, X, Receipt, RefreshCw } from 'lucide-react'
+import { formatCurrency, formatTime, cn } from '@/lib/utils'
+import { Search, X, Receipt, RefreshCw, ArrowLeft } from 'lucide-react'
 import PaymentSheet from '@/components/sell/PaymentSheet'
 import ConfirmModal from '@/components/common/ConfirmModal'
 import api from '@/lib/api'
@@ -176,7 +176,7 @@ export default function Orders() {
   return (
     <div className="h-full flex">
       {/* Orders List */}
-      <div className="flex-1 flex flex-col">
+      <div className={cn("flex-1 flex flex-col", selectedOrder ? "hidden md:flex" : "flex")}>
         {/* Header */}
         <div className="p-4 border-b bg-white space-y-4">
           <div className="flex items-center justify-between">
@@ -225,9 +225,8 @@ export default function Orders() {
             filteredOrders.map((order) => (
               <Card
                 key={order.id}
-                className={`p-4 cursor-pointer transition-all ${
-                  selectedOrder?.id === order.id ? 'ring-2 ring-primary' : ''
-                }`}
+                className={`p-4 cursor-pointer transition-all ${selectedOrder?.id === order.id ? 'ring-2 ring-primary' : ''
+                  }`}
                 onClick={() => setSelectedOrder(order)}
               >
                 <div className="flex items-center justify-between">
@@ -255,12 +254,15 @@ export default function Orders() {
       </div>
 
       {/* Order Detail */}
-      <div className="w-96 border-l bg-white">
+      <div className={cn("bg-white border-l", selectedOrder ? "flex-1 flex flex-col md:w-96" : "hidden md:flex md:w-96 md:flex-col")}>
         {selectedOrder ? (
           <div className="h-full flex flex-col">
             {/* Detail Header */}
-            <div className="p-4 border-b flex items-center justify-between">
-              <div>
+            <div className="p-4 border-b flex items-center justify-between gap-3">
+              <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSelectedOrder(null)}>
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex-1">
                 <h2 className="font-bold">Order #{selectedOrder.order_number}</h2>
                 <p className="text-sm text-muted-foreground">{selectedOrder.type}</p>
               </div>

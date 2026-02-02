@@ -40,7 +40,7 @@ export default function Splash() {
   }, [isAuthenticated, navigate, fetchProfile, fetchCurrentShift, fetchConfig])
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-primary">
+    <div className="h-[100dvh] flex flex-col items-center justify-center p-4 bg-primary">
       <div className="text-center text-white">
         <h1 className="text-5xl font-bold mb-4">POS</h1>
         <p className="text-lg opacity-80 mb-8">Point of Sale System</p>

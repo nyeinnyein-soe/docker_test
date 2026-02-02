@@ -50,7 +50,7 @@ export default function Items() {
     cost: '',
   })
   const [isSavingVariant, setIsSavingVariant] = useState(false)
-  
+
   // Modal states
   const [showDeleteProductConfirm, setShowDeleteProductConfirm] = useState(false)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
@@ -98,7 +98,7 @@ export default function Items() {
 
   const filteredProducts = products.filter((p) => {
     const matchesCategory = !selectedCategory || p.category_id === selectedCategory
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       p.name.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesCategory && matchesSearch
   })
@@ -129,7 +129,7 @@ export default function Items() {
     setProductVariants(product.variants || [])
     setActiveTab('basic')
     setShowForm(true)
-    
+
     // Fetch modifier groups and product modifiers
     try {
       const [groupsResponse, productResponse] = await Promise.all([
@@ -284,14 +284,14 @@ export default function Items() {
 
   const handleToggleModifierGroup = async (groupId: number) => {
     if (!editingProduct) return
-    
+
     // Use functional update to ensure we have the latest state
     setAssignedModifierGroupIds(prevIds => {
       const isAssigned = prevIds.includes(groupId)
       const newIds = isAssigned
         ? prevIds.filter((id) => id !== groupId)
         : [...prevIds, groupId]
-      
+
       // Call API with the new state
       api.put(`/products/${editingProduct.id}/modifiers`, {
         modifier_group_ids: newIds,
@@ -326,9 +326,9 @@ export default function Items() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b bg-white space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h1 className="text-xl font-bold">Menu Management</h1>
-          <Button onClick={handleNewProduct}>
+          <Button onClick={handleNewProduct} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
             Add Item
           </Button>
@@ -399,10 +399,11 @@ export default function Items() {
         </div>
 
         {/* Categories */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
           <Button
             variant={selectedCategory === null ? 'default' : 'outline'}
             size="sm"
+            className="flex-shrink-0"
             onClick={() => setSelectedCategory(null)}
           >
             All ({products.length})
@@ -412,6 +413,7 @@ export default function Items() {
               key={category.id}
               variant={selectedCategory === category.id ? 'default' : 'outline'}
               size="sm"
+              className="flex-shrink-0"
               onClick={() => setSelectedCategory(category.id)}
             >
               {category.name} ({products.filter((p) => p.category_id === category.id).length})
@@ -421,7 +423,7 @@ export default function Items() {
             variant="outline"
             size="sm"
             onClick={() => navigate('/app/categories')}
-            className="text-primary border-primary/50"
+            className="text-primary border-primary/50 flex-shrink-0"
           >
             <Plus className="w-3 h-3 mr-1" />
             Manage
@@ -471,8 +473,8 @@ export default function Items() {
                     {(!product.variants || product.variants.length === 0)
                       ? 'No variants'
                       : product.variants.length > 1
-                      ? `${product.variants.length} variants`
-                      : formatCurrency(product.variants[0]?.price || 0)}
+                        ? `${product.variants.length} variants`
+                        : formatCurrency(product.variants[0]?.price || 0)}
                   </p>
                   {product.variants && product.variants.length > 1 && (
                     <Badge variant="secondary" className="text-xs">
@@ -603,11 +605,10 @@ export default function Items() {
                     <label className="text-sm font-medium">Tax Setting</label>
                     <div className="flex gap-4 mt-2">
                       <label
-                        className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                          !formData.is_taxable
+                        className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${!formData.is_taxable
                             ? 'border-primary bg-primary/5'
                             : 'border-input hover:border-primary/50'
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"
@@ -619,11 +620,10 @@ export default function Items() {
                         <span className="font-medium">No Tax</span>
                       </label>
                       <label
-                        className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                          formData.is_taxable
+                        className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${formData.is_taxable
                             ? 'border-primary bg-primary/5'
                             : 'border-input hover:border-primary/50'
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"

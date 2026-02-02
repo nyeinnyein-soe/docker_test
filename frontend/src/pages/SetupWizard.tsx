@@ -30,7 +30,7 @@ const modes: { id: PosMode; name: string; description: string; icon: React.React
 export default function SetupWizard() {
   const navigate = useNavigate()
   const { posMode, businessName, setMode, setBusinessName, completeSetup, saveConfig, isLoading } = useConfigStore()
-  
+
   const [step, setStep] = useState(1)
   const [localBusinessName, setLocalBusinessName] = useState(businessName || '')
 
@@ -64,7 +64,7 @@ export default function SetupWizard() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary/30 p-4">
+    <div className="h-[100dvh] flex flex-col items-center justify-center bg-secondary/10 p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Welcome to POS</CardTitle>
@@ -78,9 +78,8 @@ export default function SetupWizard() {
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  s === step ? 'bg-primary' : s < step ? 'bg-primary/50' : 'bg-secondary'
-                }`}
+                className={`w-3 h-3 rounded-full transition-colors ${s === step ? 'bg-primary' : s < step ? 'bg-primary/50' : 'bg-secondary'
+                  }`}
               />
             ))}
           </div>
@@ -96,11 +95,10 @@ export default function SetupWizard() {
                     key={mode.id}
                     type="button"
                     onClick={() => handleModeSelect(mode.id)}
-                    className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${
-                      posMode === mode.id
+                    className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${posMode === mode.id
                         ? 'border-primary bg-primary/5'
                         : 'border-input hover:border-primary/50'
-                    }`}
+                      }`}
                   >
                     <div className={`p-3 rounded-lg ${posMode === mode.id ? 'bg-primary text-white' : 'bg-secondary'}`}>
                       {mode.icon}

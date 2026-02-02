@@ -93,14 +93,14 @@ class OrderController extends Controller
 
         $order = $payOrder($data);
 
-        return response()->json($order);
+        return response()->json(['data' => $order]);
     }
 
     public function confirm(string $uuid, ConfirmOrder $confirmOrder)
     {
         $order = $confirmOrder($uuid);
 
-        return response()->json($order);
+        return response()->json(['data' => $order]);
     }
 
     public function void(string $uuid, Request $request, VoidOrder $voidOrder)
@@ -113,7 +113,7 @@ class OrderController extends Controller
 
         $order = $voidOrder($uuid, $data);
 
-        return response()->json($order);
+        return response()->json(['data' => $order]);
     }
 
     public function updateTax(string $uuid, Request $request, UpdateOrderTax $updateOrderTax)

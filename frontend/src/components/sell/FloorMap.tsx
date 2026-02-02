@@ -50,15 +50,15 @@ export default function FloorMap({
       </div>
 
       {/* Floor map */}
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 p-4 overflow-y-auto">
         {tables.length === 0 ? (
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <p>No tables on this floor</p>
           </div>
         ) : (
-          <div className="relative min-h-[500px] bg-secondary/20 rounded-xl p-4">
+          <div className="relative bg-secondary/20 rounded-xl p-4 min-h-full">
             {/* Grid of tables */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {tables.map((table) => (
                 <button
                   key={table.id}

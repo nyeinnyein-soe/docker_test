@@ -9,14 +9,14 @@ import { Loader2 } from 'lucide-react'
 export default function Login() {
   const navigate = useNavigate()
   const { login, isLoading, error, clearError } = useAuthStore()
-  
+
   const [email, setEmail] = useState('manager@example.com')
   const [pin, setPin] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     clearError()
-    
+
     const success = await login(email, pin)
     if (success) {
       navigate('/')
@@ -38,7 +38,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary/30 p-4">
+    <div className="h-[100dvh] flex flex-col md:flex-row bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl">POS Login</CardTitle>
@@ -63,9 +63,8 @@ export default function Login() {
                 {[0, 1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className={`w-12 h-14 border-2 rounded-lg flex items-center justify-center text-2xl font-bold ${
-                      pin[i] ? 'border-primary bg-primary/5' : 'border-input'
-                    }`}
+                    className={`w-12 h-14 border-2 rounded-lg flex items-center justify-center text-2xl font-bold ${pin[i] ? 'border-primary bg-primary/5' : 'border-input'
+                      }`}
                   >
                     {pin[i] ? '•' : ''}
                   </div>

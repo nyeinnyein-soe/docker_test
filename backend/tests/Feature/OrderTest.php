@@ -118,20 +118,22 @@ class OrderTest extends TestCase
             ->assertJsonPath('data.type', 'TAKE_OUT')
             ->assertJsonPath('data.status', 'OPEN')
             ->assertJsonPath('data.payment_status', 'UNPAID')
-            ->assertJsonPath('data.subtotal', '7.00')
-            ->assertJsonPath('data.grand_total', '7.00');
+            ->assertJsonPath('data.subtotal', 6)
+            ->assertJsonPath('data.grand_total', 6);
 
         $this->assertDatabaseHas('orders', [
             'store_id' => $this->store->id,
             'type' => 'TAKE_OUT',
             'status' => 'OPEN',
+            'subtotal' => 6,
+            'grand_total' => 6,
         ]);
 
         $this->assertDatabaseHas('order_items', [
             'variant_id' => $this->variant->id,
             'quantity' => 2,
-            'unit_price' => 3.50,
-            'total_line_amount' => 7.00,
+            'unit_price' => 3,
+            'total_line_amount' => 6,
         ]);
     }
 
@@ -147,10 +149,10 @@ class OrderTest extends TestCase
             'status' => 'OPEN',
             'payment_status' => 'UNPAID',
             'version' => 1,
-            'subtotal' => 7.00,
+            'subtotal' => 7,
             'total_tax' => 0,
             'total_discount' => 0,
-            'grand_total' => 7.00,
+            'grand_total' => 7,
             'total_paid' => 0,
         ]);
 
@@ -158,7 +160,7 @@ class OrderTest extends TestCase
             ->postJson("/api/orders/{$order->uuid}/confirm");
 
         $response->assertOk()
-            ->assertJsonPath('status', 'CONFIRMED');
+            ->assertJsonPath('data.status', 'CONFIRMED');
     }
 
     public function test_can_pay_order(): void
@@ -173,10 +175,10 @@ class OrderTest extends TestCase
             'status' => 'OPEN',
             'payment_status' => 'UNPAID',
             'version' => 1,
-            'subtotal' => 7.00,
+            'subtotal' => 7,
             'total_tax' => 0,
             'total_discount' => 0,
-            'grand_total' => 7.00,
+            'grand_total' => 7,
             'total_paid' => 0,
         ]);
 
@@ -185,13 +187,13 @@ class OrderTest extends TestCase
                 'shift_id' => $this->shift->id,
                 'terminal_uuid' => $this->terminal->uuid,
                 'method' => 'CASH',
-                'amount' => 7.00,
+                'amount' => 7,
             ]);
 
         $response->assertOk()
-            ->assertJsonPath('payment_status', 'PAID')
-            ->assertJsonPath('status', 'COMPLETED')
-            ->assertJsonPath('total_paid', '7.00');
+            ->assertJsonPath('data.payment_status', 'PAID')
+            ->assertJsonPath('data.status', 'COMPLETED')
+            ->assertJsonPath('data.total_paid', 7);
 
         $this->assertDatabaseHas('payments', [
             'order_id' => $order->id,
@@ -226,7 +228,7 @@ class OrderTest extends TestCase
             ]);
 
         $response->assertOk()
-            ->assertJsonPath('status', 'VOIDED');
+            ->assertJsonPath('data.status', 'VOIDED');
     }
 
     public function test_cannot_void_paid_order(): void

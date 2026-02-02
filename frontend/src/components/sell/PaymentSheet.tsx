@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
 import { X, Banknote, CreditCard, Smartphone, Check, Loader2 } from 'lucide-react'
 import NumPad from '@/components/common/NumPad'
-import type { TaxGroup } from '@/types'
 
 type PaymentMethod = 'CASH' | 'CARD' | 'MOBILE'
 
@@ -70,16 +69,16 @@ export default function PaymentSheet({ total, subtotal, taxLines = [], onClose, 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-      <Card className="w-full max-w-lg rounded-b-none rounded-t-2xl max-h-[90vh] overflow-hidden">
+      <Card className="w-full max-w-lg rounded-b-none rounded-t-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex-none flex items-center justify-between p-4 border-b">
           <h2 className="text-xl font-bold">Payment</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-6 h-6" />
           </Button>
         </div>
 
-        <div className="p-4 space-y-4 overflow-y-auto">
+        <div className="flex-1 p-4 space-y-4 overflow-y-auto">
           {/* Summary */}
           <div className="bg-secondary/20 rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
@@ -173,8 +172,10 @@ export default function PaymentSheet({ total, subtotal, taxLines = [], onClose, 
               {error}
             </div>
           )}
+        </div>
 
-          {/* Pay Button */}
+        {/* Footer with Pay Button */}
+        <div className="flex-none p-4 border-t bg-background">
           <Button
             size="lg"
             className="w-full h-14 text-lg"

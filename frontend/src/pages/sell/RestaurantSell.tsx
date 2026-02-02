@@ -10,15 +10,16 @@ import BillModal from '@/components/sell/BillModal'
 import FloorMap from '@/components/sell/FloorMap'
 import AlertModal from '@/components/common/AlertModal'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Users, Receipt } from 'lucide-react'
+import { ArrowLeft, Users, Receipt, ShoppingBag, X, ChevronUp } from 'lucide-react'
 import api from '@/lib/api'
+import { cn, formatCurrency } from '@/lib/utils'
 import type { Category, Product, Floor, Table, ProductVariant, Modifier } from '@/types'
 
 type View = 'floor' | 'order'
 
 export default function RestaurantSell() {
   const { shift } = useAuthStore()
-  const { items, addItem, clearCart, setTableSession, setOrderType, taxType, setTaxType } = useCartStore()
+  const { items, addItem, clearCart, setTableSession, setOrderType, taxType, setTaxType, subtotal, grandTotal, calculateTaxByType, itemCount } = useCartStore()
   const { storeSettings, fetchStoreSettings } = useConfigStore()
 
   const [view, setView] = useState<View>('floor')
@@ -43,6 +44,7 @@ export default function RestaurantSell() {
     message: '',
     variant: 'error',
   })
+  const [showMobileCart, setShowMobileCart] = useState(false)
 
   useEffect(() => {
     fetchFloors()
@@ -273,8 +275,8 @@ export default function RestaurantSell() {
   // Floor view
   if (view === 'floor') {
     return (
-      <div className="h-full flex">
-        <div className="flex-1">
+      <div className="h-full flex flex-col md:flex-row overflow-hidden">
+        <div className="flex-1 overflow-hidden">
           <FloorMap
             floors={floors}
             selectedFloor={selectedFloor}
@@ -284,7 +286,7 @@ export default function RestaurantSell() {
         </div>
 
         {/* Guest count selector */}
-        <div className="w-64 border-l bg-white p-4">
+        <div className="w-full md:w-64 border-t md:border-t-0 md:border-l bg-white p-4 overflow-y-auto">
           <h3 className="font-semibold mb-4">New Table</h3>
           <div className="space-y-4">
             <div>
@@ -323,7 +325,7 @@ export default function RestaurantSell() {
 
   // Order view
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Table header */}
       <div className="bg-white border-b px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -347,9 +349,9 @@ export default function RestaurantSell() {
         </Button>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Product Grid */}
-        <div className="flex-1 border-r">
+        <div className="flex-1 border-r flex flex-col overflow-hidden">
           <ProductGrid
             categories={categories}
             products={products}
@@ -359,15 +361,52 @@ export default function RestaurantSell() {
           />
         </div>
 
-        {/* Cart */}
-        <div className="w-80 lg:w-96">
+        {/* Desktop Cart */}
+        <div className="hidden md:block w-80 lg:w-96 border-l bg-white">
           <Cart
             onCheckout={handleAddOrder}
             isProcessing={isProcessing}
             checkoutLabel="Add Order"
           />
         </div>
+
+        {/* Mobile Cart Overlay */}
+        {showMobileCart && (
+          <div className="md:hidden fixed inset-0 z-50 bg-background flex flex-col animate-in slide-in-from-bottom-10">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="font-semibold text-lg">Current Order</h2>
+              <Button variant="ghost" size="icon" onClick={() => setShowMobileCart(false)}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <Cart
+                onCheckout={() => {
+                  handleAddOrder()
+                  setShowMobileCart(false)
+                }}
+                isProcessing={isProcessing}
+                checkoutLabel="Add Order"
+              />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Mobile Summary Bar */}
+      {!showMobileCart && items.length > 0 && (
+        <div className="md:hidden border-t bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <Button className="w-full flex items-center justify-between py-6" onClick={() => setShowMobileCart(true)}>
+            <div className="flex items-center gap-2">
+              <div className="bg-primary-foreground/20 rounded-full w-6 h-6 flex items-center justify-center text-xs text-primary-foreground font-bold">
+                {itemCount()}
+              </div>
+              <span>View Order</span>
+            </div>
+            <span className="font-bold">{formatCurrency(grandTotal(storeSettings))}</span>
+          </Button>
+        </div>
+      )}
 
       {/* Modifier Modal */}
       {selectedProduct && (

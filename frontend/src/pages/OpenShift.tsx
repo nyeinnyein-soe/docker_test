@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react'
 export default function OpenShift() {
   const navigate = useNavigate()
   const { employee, openShift, isLoading, error, clearError } = useAuthStore()
-  
+
   const [amount, setAmount] = useState('')
 
   const handleNumberInput = (digit: string) => {
@@ -30,10 +30,10 @@ export default function OpenShift() {
     if (!amount || parseFloat(amount) < 0) {
       return
     }
-    
+
     clearError()
     const startingCash = parseFloat(amount || '0')
-    
+
     try {
       await openShift(startingCash)
       navigate('/app/sell', { replace: true })
@@ -46,7 +46,7 @@ export default function OpenShift() {
   const displayAmount = amount ? parseFloat(amount) : 0
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary/30 p-4">
+    <div className="h-[100dvh] flex items-center justify-center bg-secondary/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Open Shift</CardTitle>

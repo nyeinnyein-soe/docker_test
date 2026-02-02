@@ -12,8 +12,6 @@ export default function AppShell() {
   const location = useLocation()
 
   const isSellRoute = location.pathname.startsWith('/app/sell')
-  const isManagementRoute = ['/app/items', '/app/categories', '/app/modifiers', '/app/taxes', '/app/settings', '/app/tables', '/app/orders'].some(route => location.pathname.startsWith(route))
-  const isManager = employee?.role === 'MANAGER' || employee?.role === 'OWNER'
 
   useEffect(() => {
     // Fetch shift if authenticated but shift is missing
@@ -22,7 +20,7 @@ export default function AppShell() {
       const path = location.pathname
       const isMgmtRoute = ['/app/items', '/app/categories', '/app/modifiers', '/app/taxes', '/app/settings', '/app/tables', '/app/orders'].some(route => path.startsWith(route))
       const isMgr = employee?.role === 'MANAGER' || employee?.role === 'OWNER'
-      
+
       if (isMgmtRoute && isMgr) {
         // Managers accessing management routes don't need shift check
         setIsCheckingShift(false)
@@ -48,7 +46,7 @@ export default function AppShell() {
   // Management routes don't require shift, so don't block them
   if (isLoading || (isCheckingShift && isSellRoute)) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="h-[100dvh] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p className="text-muted-foreground">Loading...</p>
@@ -64,11 +62,11 @@ export default function AppShell() {
     // Only redirect sell routes if no shift
     return <Navigate to="/open-shift" replace />
   }
-  
+
   // Management routes are always accessible - backend API will handle role-based authorization
 
   return (
-    <div className="h-screen flex flex-col bg-secondary/30">
+    <div className="fixed inset-0 w-full h-full flex flex-col bg-secondary/30 overflow-hidden">
       <Header />
       <main className="flex-1 overflow-hidden">
         <Outlet />
