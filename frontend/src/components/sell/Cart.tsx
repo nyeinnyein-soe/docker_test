@@ -1,7 +1,7 @@
 import { useCartStore } from '@/stores/cart'
 import { useConfigStore, TAX_TYPE_OPTIONS } from '@/stores/config'
 import { Button } from '@/components/ui/button'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, cn } from '@/lib/utils'
 import { ShoppingCart, Plus, Minus, Trash2, ChevronDown } from 'lucide-react'
 import type { TaxType } from '@/types'
 
@@ -16,12 +16,12 @@ export default function Cart({
   isProcessing = false,
   checkoutLabel = 'Checkout',
 }: CartProps) {
-  const { items, updateQuantity, removeItem, clearCart, subtotal, itemCount, taxType, setTaxType, calculateTaxByType } = useCartStore()
+  const { items, updateQuantity, removeItem, clearCart, subtotal, itemCount, taxType, setTaxType, calculateTaxByType, orderType } = useCartStore()
   const { storeSettings } = useConfigStore()
 
   const taxInfo = calculateTaxByType(storeSettings)
   const currentSubtotal = subtotal()
-  
+
   // Calculate total based on tax info
   const total = currentSubtotal + taxInfo.lines.reduce((sum, line) => {
     // Only add exclusive taxes to the total
@@ -121,31 +121,39 @@ export default function Cart({
 
       {/* Cart Footer */}
       <div className="border-t p-4 space-y-3 bg-secondary/5">
-        {/* Tax Type Selector */}
-        <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">Tax Type</label>
-          <div className="relative">
-            <select
-              value={taxType}
-              onChange={(e) => setTaxType(e.target.value as TaxType)}
-              className="w-full h-10 px-3 pr-8 rounded-lg border border-input bg-background text-sm font-medium appearance-none cursor-pointer"
-            >
+        {/* Tax Selection - Only for immediate-pay modes (Takeout/Delivery) */}
+        {orderType !== 'DINE_IN' && (
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block">
+              Tax Selection
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
               {TAX_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+                <Button
+                  key={option.value}
+                  variant={taxType === option.value ? 'default' : 'outline'}
+                  size="sm"
+                  className={cn(
+                    "h-8 text-[10px] font-bold px-2",
+                    taxType === option.value ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-white text-slate-600 border-slate-200"
+                  )}
+                  onClick={() => setTaxType(option.value)}
+                >
+                  {option.label.split(' ')[0]} {option.label.includes('Service') ? 'Srv.' : option.label.includes('Comm') ? 'Tax' : ''}
+                  {option.value === 'NONE' && 'None'}
+                  {option.value === 'BOTH' && 'Both'}
+                </Button>
               ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="space-y-1">
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">Subtotal</span>
             <span>{formatCurrency(currentSubtotal)}</span>
           </div>
-          
+
           {taxInfo.lines.map((line, i) => (
             <div key={i} className="flex justify-between items-center text-xs">
               <span className="text-muted-foreground">

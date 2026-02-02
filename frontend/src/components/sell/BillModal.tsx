@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, cn } from '@/lib/utils'
 import { X, Receipt, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
 import type { Order } from '@/types'
@@ -20,10 +20,10 @@ export default function BillModal({ tableSessionId, tableName, onClose, onPay }:
   const [taxType, setTaxType] = useState<string>('NONE')
 
   useEffect(() => {
-    fetchOrders()
+    fetchOrders(true)
   }, [tableSessionId])
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (isInitial = false) => {
     setIsLoading(true)
     try {
       const response = await api.get('/orders')
@@ -33,8 +33,8 @@ export default function BillModal({ tableSessionId, tableName, onClose, onPay }:
       )
       setOrders(sessionOrders)
 
-      // Default to the tax type of the first order
-      if (sessionOrders.length > 0) {
+      // Default to the tax type of the first order (only on initial load)
+      if (sessionOrders.length > 0 && (isInitial || !taxType)) {
         setTaxType(sessionOrders[0].tax_type)
       }
     } catch (error) {
@@ -49,12 +49,20 @@ export default function BillModal({ tableSessionId, tableName, onClose, onPay }:
     setIsUpdatingTax(true)
     try {
       // Update all orders in the session with the new tax type
-      await Promise.all(
-        orders.map(order => api.patch(`/orders/${order.uuid}/tax`, { tax_type: newType }))
+      const updatedOrders = await Promise.all(
+        orders.map(async (order) => {
+          const response = await api.put(`/orders/${order.uuid}/tax`, { tax_type: newType })
+          return response.data.data
+        })
       )
-      await fetchOrders()
+
+      // Update local state immediately with guaranteed fresh data
+      setOrders(updatedOrders)
+      setTaxType(newType)
     } catch (error) {
       console.error('Failed to update tax type:', error)
+      // Revert local state and show fresh data if it failed
+      await fetchOrders(true)
     } finally {
       setIsUpdatingTax(false)
     }
@@ -168,7 +176,7 @@ export default function BillModal({ tableSessionId, tableName, onClose, onPay }:
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Tax Selection
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {[
                 { value: 'NONE', label: 'No Tax' },
                 { value: 'COMMERCIAL', label: 'Comm. Tax' },
@@ -179,14 +187,20 @@ export default function BillModal({ tableSessionId, tableName, onClose, onPay }:
                   key={opt.value}
                   variant={taxType === opt.value ? 'default' : 'outline'}
                   size="sm"
-                  className="text-xs h-9"
+                  className={cn(
+                    "h-12 text-[11px] font-black uppercase tracking-tight px-1 rounded-xl transition-all duration-200",
+                    taxType === opt.value
+                      ? "bg-primary text-white shadow-lg shadow-primary/30 border-none scale-[1.02]"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                  )}
                   disabled={isUpdatingTax || isLoading}
                   onClick={() => handleUpdateTaxType(opt.value)}
                 >
                   {isUpdatingTax && taxType === opt.value ? (
-                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  ) : null}
-                  {opt.label}
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <span className="text-center w-full leading-tight">{opt.label}</span>
+                  )}
                 </Button>
               ))}
             </div>

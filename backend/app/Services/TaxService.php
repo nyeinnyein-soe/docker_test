@@ -19,13 +19,13 @@ class TaxService
      */
     public function calculateAndApply(Order $order, ?int $taxGroupId): string
     {
-        if (! $taxGroupId) {
+        if (!$taxGroupId) {
             return '0.00';
         }
 
         $taxGroup = TaxGroup::with('taxes')->find($taxGroupId);
 
-        if (! $taxGroup) {
+        if (!$taxGroup) {
             return '0.00';
         }
 
@@ -78,13 +78,13 @@ class TaxService
      */
     public function preview(string|float $subtotal, ?int $taxGroupId): array
     {
-        if (! $taxGroupId) {
+        if (!$taxGroupId) {
             return ['total_tax' => '0.00', 'lines' => []];
         }
 
         $taxGroup = TaxGroup::with('taxes')->find($taxGroupId);
 
-        if (! $taxGroup) {
+        if (!$taxGroup) {
             return ['total_tax' => '0.00', 'lines' => []];
         }
 
@@ -123,9 +123,9 @@ class TaxService
     {
         if ($taxType === 'NONE' || (float) $taxableAmount <= 0) {
             return [
-                'total_tax' => '0.00',
-                'exclusive_tax' => '0.00',
-                'inclusive_tax' => '0.00',
+                'total_tax' => '0',
+                'exclusive_tax' => '0',
+                'inclusive_tax' => '0',
             ];
         }
 

@@ -12,7 +12,8 @@ class UpdateOrderTax
 {
     public function __construct(
         protected TaxService $taxService,
-    ) {}
+    ) {
+    }
 
     public function __invoke(string $uuid, string $taxType): Order
     {
@@ -28,7 +29,7 @@ class UpdateOrderTax
 
             // 3. Calculate taxable amount using fixed item-level discounts
             $subtotal = $order->subtotal;
-            $taxableAmount = '0.00';
+            $taxableAmount = '0';
             foreach ($order->items as $item) {
                 if ($item->variant->product?->is_taxable ?? true) {
                     $taxableAmount = Money::add($taxableAmount, $item->subtotal_after_discount);
