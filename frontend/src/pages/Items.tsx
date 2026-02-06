@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, cn } from '@/lib/utils'
-import { Search, Plus, Edit, Trash2, X, Save, Loader2, Layers, FolderTree, Sliders, Check } from 'lucide-react'
+import { Search, Plus, Edit, Trash2, X, Save, Loader2, Layers, FolderTree, Sliders, Check, Star } from 'lucide-react'
 import ConfirmModal from '@/components/common/ConfirmModal'
 import AlertModal from '@/components/common/AlertModal'
 import api from '@/lib/api'
@@ -175,17 +175,30 @@ export default function Items() {
     setIsSaving(true)
     try {
       if (editingProduct) {
+        // Use the managed variants state instead of overwriting with 'Default'
+        const variantsToSave = productVariants.length > 0
+          ? productVariants.map(v => ({
+            id: v.id,
+            name: v.name,
+            price: parseFloat(String(v.price)),
+            cost: parseFloat(String(v.cost)) || 0,
+            sku: v.sku,
+            is_default: v.is_default
+          }))
+          : [{
+            id: editingProduct.variants[0]?.id,
+            name: editingProduct.variants[0]?.name || 'Default',
+            price: parseFloat(formData.price),
+            cost: parseFloat(formData.cost) || 0,
+            is_default: true
+          }]
+
         await api.put(`/products/${editingProduct.id}`, {
           name: formData.name,
           description: formData.description,
           category_id: formData.category_id,
           is_taxable: formData.is_taxable,
-          variants: [{
-            id: editingProduct.variants[0]?.id,
-            name: 'Default',
-            price: parseFloat(formData.price),
-            cost: parseFloat(formData.cost) || 0,
-          }],
+          variants: variantsToSave,
         })
       } else {
         await api.post('/products', {
@@ -228,6 +241,34 @@ export default function Items() {
     setShowVariantForm(true)
   }
 
+  const handleSetDefaultVariant = async (variant: ProductVariant) => {
+    if (variant.is_default) return
+
+    try {
+      await api.put(`/variants/${variant.id}`, {
+        is_default: true
+      })
+
+      // Update local state
+      const updatedVariants = productVariants.map(v => ({
+        ...v,
+        is_default: v.id === variant.id
+      }))
+      setProductVariants(updatedVariants)
+
+      // Update Basic Info tab with the new default variant's price/cost
+      setFormData(prev => ({
+        ...prev,
+        price: variant.price,
+        cost: variant.cost || '0'
+      }))
+
+      fetchMenu()
+    } catch (error) {
+      console.error('Failed to set default variant:', error)
+    }
+  }
+
   const handleDeleteVariant = (variant: ProductVariant) => {
     setVariantToDelete(variant)
     setShowDeleteVariantConfirm(true)
@@ -263,7 +304,17 @@ export default function Items() {
           price: parseFloat(variantFormData.price),
           cost: parseFloat(variantFormData.cost) || 0,
         })
-        setProductVariants(productVariants.map((v) => (v.id === editingVariant.id ? response.data.data : v)))
+        const updatedVariant = response.data.data
+        setProductVariants(productVariants.map((v) => (v.id === editingVariant.id ? updatedVariant : v)))
+
+        // Sync with Basic Info tab if it's the first/default variant
+        if (editingVariant.is_default || productVariants[0]?.id === editingVariant.id) {
+          setFormData(prev => ({
+            ...prev,
+            price: variantFormData.price,
+            cost: variantFormData.cost
+          }))
+        }
       } else {
         const response = await api.post('/variants', {
           product_id: editingProduct!.id,
@@ -272,7 +323,17 @@ export default function Items() {
           price: parseFloat(variantFormData.price),
           cost: parseFloat(variantFormData.cost) || 0,
         })
-        setProductVariants([...productVariants, response.data.data])
+        const newVariant = response.data.data
+        setProductVariants([...productVariants, newVariant])
+
+        // If it's the first variant ever, sync with Basic Info
+        if (productVariants.length === 0) {
+          setFormData(prev => ({
+            ...prev,
+            price: variantFormData.price,
+            cost: variantFormData.cost
+          }))
+        }
       }
       setShowVariantForm(false)
       fetchMenu()
@@ -706,6 +767,15 @@ export default function Items() {
                             )}
                           </div>
                           <div className="flex gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={cn(variant.is_default ? "text-yellow-500 border-yellow-500/50 bg-yellow-50" : "text-muted-foreground")}
+                              onClick={() => handleSetDefaultVariant(variant)}
+                              title={variant.is_default ? "Default Variant" : "Set as Default"}
+                            >
+                              <Star className={cn("w-4 h-4", variant.is_default && "fill-current")} />
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"

@@ -39,6 +39,7 @@ class ProductController extends Controller
             'variants.*.price' => ['required', 'numeric', 'min:0'],
             'variants.*.cost' => ['nullable', 'numeric', 'min:0'],
             'variants.*.sku' => ['nullable', 'string', 'max:50'],
+            'variants.*.is_default' => ['sometimes', 'boolean'],
         ]);
 
         $storeId = $request->user()->store_id;
@@ -65,7 +66,7 @@ class ProductController extends Controller
                     'sku' => $variantData['sku'] ?? strtoupper(Str::slug($data['name'])) . '-' . ($index + 1),
                     'price' => $variantData['price'],
                     'cost' => $variantData['cost'] ?? 0,
-                    'is_default' => $index === 0,
+                    'is_default' => isset($variantData['is_default']) ? $variantData['is_default'] : ($index === 0),
                     'is_active' => true,
                 ]);
             }
@@ -148,16 +149,26 @@ class ProductController extends Controller
             ]);
 
             if (isset($data['variants'])) {
+                $hasNewDefault = collect($data['variants'])->where('is_default', true)->isNotEmpty();
+
                 foreach ($data['variants'] as $index => $variantData) {
                     if (isset($variantData['id'])) {
+                        $updateData = [
+                            'name' => $variantData['name'],
+                            'price' => $variantData['price'],
+                            'cost' => $variantData['cost'] ?? 0,
+                            'sku' => $variantData['sku'] ?? null,
+                        ];
+
+                        if (isset($variantData['is_default'])) {
+                            $updateData['is_default'] = $variantData['is_default'];
+                        }
+
                         ProductVariant::where('id', $variantData['id'])
                             ->where('product_id', $product->id)
-                            ->update([
-                                'name' => $variantData['name'],
-                                'price' => $variantData['price'],
-                                'cost' => $variantData['cost'] ?? 0,
-                                'sku' => $variantData['sku'] ?? null,
-                            ]);
+                            ->update($updateData);
+
+                        // If we just set this one to default, unset others (handled below the loop for efficiency)
                     } else {
                         ProductVariant::create([
                             'uuid' => (string) Str::uuid(),
@@ -166,9 +177,31 @@ class ProductController extends Controller
                             'sku' => $variantData['sku'] ?? strtoupper(Str::slug($product->name)) . '-' . ($index + 1),
                             'price' => $variantData['price'],
                             'cost' => $variantData['cost'] ?? 0,
-                            'is_default' => $index === 0,
+                            'is_default' => $variantData['is_default'] ?? false,
                             'is_active' => true,
                         ]);
+                    }
+                }
+
+                if ($hasNewDefault) {
+                    $newDefaultId = collect($data['variants'])->where('is_default', true)->first()['id'] ?? null;
+                    if ($newDefaultId) {
+                        ProductVariant::where('product_id', $product->id)
+                            ->where('id', '!=', $newDefaultId)
+                            ->update(['is_default' => false]);
+                    } else {
+                        // If it was a newly created one that is default, we need to find it by UUID or similar
+                        // For simplicity, we can just fetch the one that is currently default and unset others
+                        $latestDefault = ProductVariant::where('product_id', $product->id)
+                            ->where('is_default', true)
+                            ->orderBy('updated_at', 'desc')
+                            ->first();
+
+                        if ($latestDefault) {
+                            ProductVariant::where('product_id', $product->id)
+                                ->where('id', '!=', $latestDefault->id)
+                                ->update(['is_default' => false]);
+                        }
                     }
                 }
             }

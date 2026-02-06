@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ProductVariantController extends Controller
@@ -21,7 +22,7 @@ class ProductVariantController extends Controller
         ]);
 
         $product = Product::findOrFail($data['product_id']);
-        
+
         // Verify product belongs to user's store
         if ($product->store_id !== $request->user()->store_id) {
             return response()->json(['message' => 'Product not found'], 404);
@@ -46,24 +47,34 @@ class ProductVariantController extends Controller
             'sku' => ['nullable', 'string', 'max:50'],
             'price' => ['sometimes', 'numeric', 'min:0'],
             'cost' => ['nullable', 'numeric', 'min:0'],
+            'is_default' => ['sometimes', 'boolean'],
         ]);
 
         $variant = ProductVariant::with('product')->findOrFail($id);
-        
+
         // Verify variant belongs to user's store
         if ($variant->product->store_id !== $request->user()->store_id) {
             return response()->json(['message' => 'Variant not found'], 404);
         }
 
-        $variant->update($data);
+        DB::transaction(function () use ($variant, $data) {
+            if (isset($data['is_default']) && $data['is_default']) {
+                // Unset default for all other variants of this product
+                ProductVariant::where('product_id', $variant->product_id)
+                    ->where('id', '!=', $variant->id)
+                    ->update(['is_default' => false]);
+            }
 
-        return response()->json(['data' => $variant]);
+            $variant->update($data);
+        });
+
+        return response()->json(['data' => $variant->fresh()]);
     }
 
     public function destroy(Request $request, int $id)
     {
         $variant = ProductVariant::with('product')->findOrFail($id);
-        
+
         // Verify variant belongs to user's store
         if ($variant->product->store_id !== $request->user()->store_id) {
             return response()->json(['message' => 'Variant not found'], 404);
