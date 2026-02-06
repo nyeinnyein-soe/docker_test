@@ -21,8 +21,14 @@ class UpdateOrderTax
             $order = Order::where('uuid', $uuid)->with(['items.variant.product', 'discounts', 'store'])->firstOrFail();
             $store = $order->store;
 
-            // 1. Update tax type
+            // 1. Update tax type and snapshot configuration from store
             $order->tax_type = $taxType;
+            $order->tax_config_snapshot = [
+                'commercial_tax_rate' => $store->commercial_tax_rate,
+                'commercial_tax_inclusive' => $store->commercial_tax_inclusive,
+                'service_charge_rate' => $store->service_charge_rate,
+                'service_charge_inclusive' => $store->service_charge_inclusive,
+            ];
 
             // 2. Delete existing tax lines
             $order->taxLines()->delete();

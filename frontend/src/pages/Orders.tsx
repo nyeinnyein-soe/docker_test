@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
+import { TAX_TYPE_OPTIONS } from '@/stores/config'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -24,6 +25,7 @@ export default function Orders() {
   const [showVoidConfirm, setShowVoidConfirm] = useState(false)
   const [orderToVoid, setOrderToVoid] = useState<Order | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isUpdatingTax, setIsUpdatingTax] = useState(false)
 
   useEffect(() => {
     fetchOrders()
@@ -146,6 +148,22 @@ export default function Orders() {
     return true
   })
 
+  const handleUpdateTaxType = async (newType: string) => {
+    if (!selectedOrder) return
+    setIsUpdatingTax(true)
+    try {
+      await api.put(`/orders/${selectedOrder.uuid}/tax`, { tax_type: newType })
+      // Refresh selected order and full list
+      const response = await api.get(`/orders/${selectedOrder.uuid}`)
+      setSelectedOrder(response.data.data)
+      fetchOrders()
+    } catch (error) {
+      console.error('Failed to update tax type:', error)
+    } finally {
+      setIsUpdatingTax(false)
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN':
@@ -225,8 +243,10 @@ export default function Orders() {
             filteredOrders.map((order) => (
               <Card
                 key={order.id}
-                className={`p-4 cursor-pointer transition-all ${selectedOrder?.id === order.id ? 'ring-2 ring-primary' : ''
-                  }`}
+                className={cn(
+                  "p-4 cursor-pointer transition-all",
+                  selectedOrder?.id === order.id ? 'ring-2 ring-primary' : ''
+                )}
                 onClick={() => setSelectedOrder(order)}
               >
                 <div className="flex items-center justify-between">
@@ -271,60 +291,97 @@ export default function Orders() {
               </Button>
             </div>
 
-            {/* Items */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <h3 className="font-semibold mb-3">Items</h3>
-              <div className="space-y-2">
-                {selectedOrder.items?.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>
-                      {item.quantity}x {item.variant?.name || 'Item'}
-                    </span>
-                    <span>{formatCurrency(item.total_line_amount)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t mt-4 pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>{formatCurrency(selectedOrder.subtotal)}</span>
-                </div>
-                {parseFloat(selectedOrder.total_tax) > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Tax</span>
-                    <span>{formatCurrency(selectedOrder.total_tax)}</span>
-                  </div>
-                )}
-                {parseFloat(selectedOrder.total_discount) > 0 && (
-                  <div className="flex justify-between text-sm text-success">
-                    <span>Discount</span>
-                    <span>-{formatCurrency(selectedOrder.total_discount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                  <span>Total</span>
-                  <span>{formatCurrency(selectedOrder.grand_total)}</span>
-                </div>
-              </div>
-
-              {/* Payments */}
-              {selectedOrder.payments && selectedOrder.payments.length > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <h3 className="font-semibold mb-3">Payments</h3>
-                  <div className="space-y-2">
-                    {selectedOrder.payments.map((payment) => (
-                      <div key={payment.id} className="flex justify-between text-sm">
-                        <span>{payment.method}</span>
-                        <span>{formatCurrency(payment.amount)}</span>
-                      </div>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* Tax Selection - Only for unpaid orders */}
+              {selectedOrder.payment_status === 'UNPAID' && selectedOrder.status !== 'VOIDED' && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block">
+                    Tax Selection
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {TAX_TYPE_OPTIONS.map((option) => (
+                      <Button
+                        key={option.value}
+                        variant={selectedOrder.tax_type === option.value ? 'default' : 'outline'}
+                        size="sm"
+                        className={cn(
+                          "h-10 text-[10px] font-bold px-2",
+                          selectedOrder.tax_type === option.value ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-white text-slate-600 border-slate-200"
+                        )}
+                        disabled={isUpdatingTax}
+                        onClick={() => handleUpdateTaxType(option.value)}
+                      >
+                        {isUpdatingTax && selectedOrder.tax_type === option.value ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            {option.label.split(' ')[0]} {option.label.includes('Service') ? 'Srv.' : option.label.includes('Comm') ? 'Tax' : ''}
+                            {option.value === 'NONE' && 'None'}
+                            {option.value === 'BOTH' && 'Both'}
+                          </>
+                        )}
+                      </Button>
                     ))}
                   </div>
                 </div>
               )}
+
+              {/* Items */}
+              <div>
+                <h3 className="font-semibold mb-3">Items</h3>
+                <div className="space-y-2">
+                  {selectedOrder.items?.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span>
+                        {item.quantity}x {item.variant?.name || 'Item'}
+                      </span>
+                      <span>{formatCurrency(item.total_line_amount)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t mt-4 pt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(selectedOrder.subtotal)}</span>
+                  </div>
+                  {parseFloat(selectedOrder.total_tax) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span>Tax</span>
+                      <span>{formatCurrency(selectedOrder.total_tax)}</span>
+                    </div>
+                  )}
+                  {parseFloat(selectedOrder.total_discount) > 0 && (
+                    <div className="flex justify-between text-sm text-success">
+                      <span>Discount</span>
+                      <span>-{formatCurrency(selectedOrder.total_discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                    <span>Total</span>
+                    <span>{formatCurrency(selectedOrder.grand_total)}</span>
+                  </div>
+                </div>
+
+                {/* Payments */}
+                {selectedOrder.payments && selectedOrder.payments.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <h3 className="font-semibold mb-3">Payments</h3>
+                    <div className="space-y-2">
+                      {selectedOrder.payments.map((payment) => (
+                        <div key={payment.id} className="flex justify-between text-sm">
+                          <span>{payment.method}</span>
+                          <span>{formatCurrency(payment.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Actions */}
+            {/* Sticky Actions */}
             <div className="p-4 border-t space-y-2">
               {selectedOrder.payment_status === 'UNPAID' && selectedOrder.status !== 'VOIDED' && (
                 <>
@@ -367,16 +424,22 @@ export default function Orders() {
         )}
       </div>
 
-      {/* Payment Sheet */}
+      {/* Overlays */}
       {showPayment && selectedOrder && (
         <PaymentSheet
           total={parseFloat(selectedOrder.grand_total)}
+          subtotal={parseFloat(selectedOrder.subtotal)}
+          taxLines={(selectedOrder.tax_lines && selectedOrder.tax_lines.length > 0)
+            ? selectedOrder.tax_lines.map(tl => ({
+              name: tl.tax_name,
+              amount: parseFloat(tl.tax_amount)
+            }))
+            : (parseFloat(selectedOrder.total_tax) > 0 ? [{ name: 'Tax', amount: parseFloat(selectedOrder.total_tax) }] : [])}
           onClose={() => setShowPayment(false)}
           onPayment={handlePayment}
         />
       )}
 
-      {/* Void Confirmation Modal */}
       <ConfirmModal
         open={showVoidConfirm}
         onOpenChange={(open) => {

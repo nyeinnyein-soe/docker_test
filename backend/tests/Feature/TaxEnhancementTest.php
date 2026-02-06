@@ -150,9 +150,9 @@ class TaxEnhancementTest extends TestCase
             'service_charge_rate' => 0.10, // 10%
         ]);
 
-        // 4. Update Tax on existing order (should still use snapshot)
+        // 4. Update Tax on existing order (should now refresh snapshot from store)
         // Store now has 10% Commercial + 10% Service
-        // BUT Snapshot should still have 5% Commercial + 10% Service
+        // Snapshot should be updated to 10% Commercial + 10% Service
         $response = $this->withHeader('Authorization', "Bearer {$this->token}")
             ->putJson("/api/orders/{$orderUuid}/tax", [
                 'tax_type' => 'BOTH',
@@ -160,14 +160,14 @@ class TaxEnhancementTest extends TestCase
 
         $response->assertOk();
 
-        // Totals should be the SAME as before because of the snapshot
+        // Totals should be updated: 10,000 + 1000 (Comm 10%) + 1000 (Srv 10%) = 12,000
         $this->assertDatabaseHas('orders', [
             'uuid' => $orderUuid,
             'subtotal' => 10000,
-            'total_tax' => 1500,
-            'grand_total' => 11500,
+            'total_tax' => 2000,
+            'grand_total' => 12000,
         ]);
-        $this->assertEquals(0.05, (float) $response->json('data.tax_config_snapshot.commercial_tax_rate'));
+        $this->assertEquals(0.10, (float) $response->json('data.tax_config_snapshot.commercial_tax_rate'));
     }
 
     /**

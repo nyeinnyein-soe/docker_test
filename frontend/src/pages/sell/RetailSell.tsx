@@ -5,12 +5,15 @@ import { useConfigStore } from '@/stores/config'
 import ProductGrid from '@/components/sell/ProductGrid'
 import Cart from '@/components/sell/Cart'
 import PaymentSheet from '@/components/sell/PaymentSheet'
+import { Button } from '@/components/ui/button'
+import { X } from 'lucide-react'
 import api from '@/lib/api'
+import { formatCurrency } from '@/lib/utils'
 import type { Category, Product } from '@/types'
 
 export default function RetailSell() {
   const { shift } = useAuthStore()
-  const { items, addItem, clearCart, subtotal, taxType, setTaxType, calculateTaxByType, grandTotal } = useCartStore()
+  const { items, addItem, clearCart, subtotal, taxType, setTaxType, calculateTaxByType, grandTotal, itemCount, setOrderType } = useCartStore()
   const { storeSettings, fetchStoreSettings } = useConfigStore()
 
   const [categories, setCategories] = useState<Category[]>([])
@@ -18,10 +21,12 @@ export default function RetailSell() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [showPayment, setShowPayment] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showMobileCart, setShowMobileCart] = useState(false)
 
   useEffect(() => {
     fetchMenu()
     fetchStoreSettings()
+    setOrderType('TAKEOUT')
   }, [])
 
   // Set default tax type from store settings
@@ -108,25 +113,63 @@ export default function RetailSell() {
   const total = grandTotal(storeSettings)
 
   return (
-    <div className="h-full flex">
-      {/* Product Grid */}
-      <div className="flex-1 border-r">
-        <ProductGrid
-          categories={categories}
-          products={products}
-          selectedCategory={selectedCategory}
-          onCategorySelect={setSelectedCategory}
-          onProductClick={handleProductClick}
-        />
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Product Grid */}
+        <div className="flex-1 border-r flex flex-col overflow-hidden">
+          <ProductGrid
+            categories={categories}
+            products={products}
+            selectedCategory={selectedCategory}
+            onCategorySelect={setSelectedCategory}
+            onProductClick={handleProductClick}
+          />
+        </div>
+
+        {/* Desktop Cart */}
+        <div className="hidden md:block w-80 lg:w-96 border-l bg-white">
+          <Cart
+            onCheckout={handleCheckout}
+            isProcessing={isProcessing}
+          />
+        </div>
+
+        {/* Mobile Cart Overlay */}
+        {showMobileCart && (
+          <div className="md:hidden fixed inset-0 z-50 bg-background flex flex-col animate-in slide-in-from-bottom-10">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="font-semibold text-lg">Current Order</h2>
+              <Button variant="ghost" size="icon" onClick={() => setShowMobileCart(false)}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <Cart
+                onCheckout={() => {
+                  handleCheckout()
+                  setShowMobileCart(false)
+                }}
+                isProcessing={isProcessing}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Cart */}
-      <div className="w-80 lg:w-96">
-        <Cart
-          onCheckout={handleCheckout}
-          isProcessing={isProcessing}
-        />
-      </div>
+      {/* Mobile Summary Bar */}
+      {!showMobileCart && items.length > 0 && (
+        <div className="md:hidden border-t bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <Button className="w-full flex items-center justify-between py-6" onClick={() => setShowMobileCart(true)}>
+            <div className="flex items-center gap-2">
+              <div className="bg-primary-foreground/20 rounded-full w-6 h-6 flex items-center justify-center text-xs text-primary-foreground font-bold">
+                {itemCount()}
+              </div>
+              <span>View Order</span>
+            </div>
+            <span className="font-bold">{formatCurrency(grandTotal(storeSettings))}</span>
+          </Button>
+        </div>
+      )}
 
       {/* Payment Sheet */}
       {showPayment && (

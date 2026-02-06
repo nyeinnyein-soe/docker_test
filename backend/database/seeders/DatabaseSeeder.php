@@ -38,6 +38,11 @@ class DatabaseSeeder extends Seeder
                 'currency_code' => 'MMK',
                 'time_zone' => 'Asia/Yangon',
                 'tax_registration_no' => null,
+                'commercial_tax_rate' => 0.05,
+                'commercial_tax_inclusive' => false,
+                'service_charge_rate' => 0.10,
+                'service_charge_inclusive' => false,
+                'default_tax_type' => 'NONE',
                 'is_active' => true,
             ]
         );
