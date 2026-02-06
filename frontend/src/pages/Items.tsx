@@ -382,71 +382,41 @@ export default function Items() {
     })
   }
 
-  const totalVariants = products.reduce((sum, p) => sum + p.variants.length, 0)
 
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b bg-white space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h1 className="text-xl font-bold">Menu Management</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold">Menu Management</h1>
+            <div className="flex items-center gap-1 border-l pl-3 ml-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/app/categories')}
+                className="w-8 h-8 text-muted-foreground hover:text-primary"
+                title="Manage Categories"
+              >
+                <FolderTree className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/app/modifiers')}
+                className="w-8 h-8 text-muted-foreground hover:text-purple-600"
+                title="Manage Modifiers"
+              >
+                <Sliders className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
           <Button onClick={handleNewProduct} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
             Add Item
           </Button>
         </div>
 
-        {/* Quick Access Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card
-            className="p-3 cursor-pointer hover:bg-secondary/50 transition-colors border-2 hover:border-primary/50"
-            onClick={() => navigate('/app/categories')}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <FolderTree className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">Categories</p>
-                <p className="text-xs text-muted-foreground">{categories.length} total</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            className="p-3 cursor-pointer hover:bg-secondary/50 transition-colors border-2 hover:border-primary/50"
-            onClick={() => {
-              if (products.length > 0) {
-                handleEditProduct(products[0])
-              }
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Layers className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">Variants</p>
-                <p className="text-xs text-muted-foreground">{totalVariants} total</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            className="p-3 cursor-pointer hover:bg-secondary/50 transition-colors border-2 hover:border-primary/50"
-            onClick={() => navigate('/app/modifiers')}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <Sliders className="w-5 h-5 text-purple-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">Modifiers</p>
-                <p className="text-xs text-muted-foreground">Manage</p>
-              </div>
-            </div>
-          </Card>
-        </div>
 
         {/* Search */}
         <div className="relative">
@@ -481,15 +451,6 @@ export default function Items() {
               {category.name} ({products.filter((p) => p.category_id === category.id).length})
             </Button>
           ))}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/app/categories')}
-            className="text-primary border-primary/50 flex-shrink-0"
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            Manage
-          </Button>
         </div>
       </div>
 

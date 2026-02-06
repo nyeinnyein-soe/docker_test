@@ -15,6 +15,7 @@ class CategoryController extends Controller
 
         $categories = Category::where('store_id', $storeId)
             ->whereNull('deleted_at')
+            ->withCount('products')
             ->orderBy('name')
             ->get();
 

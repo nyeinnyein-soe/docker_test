@@ -145,6 +145,7 @@ export interface Category {
   sort_order?: number
   is_active?: boolean
   products?: Product[]
+  products_count?: number
 }
 
 export interface ModifierGroup {

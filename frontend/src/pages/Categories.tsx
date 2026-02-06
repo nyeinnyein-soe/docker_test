@@ -135,7 +135,7 @@ export default function Categories() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {categories.map((category) => (
               <Card key={category.id} className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3">
                   <div
                     className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold"
                     style={{ backgroundColor: category.color_hex || category.color || '#CCCCCC' }}
@@ -145,7 +145,7 @@ export default function Categories() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium truncate">{category.name}</h3>
                     <p className="text-xs text-muted-foreground">
-                      {category.products?.length || 0} products
+                      {category.products_count || 0} products
                     </p>
                   </div>
                 </div>
