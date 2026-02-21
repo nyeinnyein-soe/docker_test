@@ -8,7 +8,9 @@ A multi-tenant Point of Sale (POS) system with a Laravel backend API and modern 
 
 **For Troubleshooting & Production:** See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues, production setup, and maintenance procedures.
 
-**Quick Start (Development):**
+**For Docker Setup:** See [DOCKER.md](./DOCKER.md) for instructions on running the system using Docker.
+
+## Quick Start (Development)
 
 ## Project Structure
 
@@ -51,6 +53,16 @@ cd frontend
 npm install
 npm run dev
 ```
+
+### Quick Start (Docker)
+
+If you have Docker and Docker Compose installed:
+
+```bash
+docker compose up -d --build
+```
+
+For more details, see [DOCKER.md](./DOCKER.md).
 
 The frontend runs at http://localhost:5173 and the backend API at http://localhost:8000.
 
