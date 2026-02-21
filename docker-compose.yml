@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: erppos-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/var/www/html/backend
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-erppos_db}
+      - DB_USERNAME=${DB_USERNAME:-erppos_user}
+      - DB_PASSWORD=${DB_PASSWORD:-erppos_password}
+      - APP_URL=http://localhost:8000
+      - FRONTEND_URL=http://localhost:5173
+    depends_on:
+      - db
+    networks:
+      - erppos-network
+    command: >
+      bash -c "composer install && php artisan key:generate --no-interaction && php artisan migrate --force && php artisan db:seed --force && php artisan storage:link && chmod -R 775 storage bootstrap/cache && php artisan serve --host=0.0.0.0 --port=8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: erppos-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    depends_on:
+      - backend
+    networks:
+      - erppos-network
+    command: >
+      sh -c "npm install && npm run dev -- --host 0.0.0.0"
+
+  db:
+    image: postgres:15-alpine
+    container_name: erppos-db
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=${DB_DATABASE:-erppos_db}
+      - POSTGRES_USER=${DB_USERNAME:-erppos_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-erppos_password}
+    volumes:
+      - erppos-postgres-data:/var/lib/postgresql/data
+    networks:
+      - erppos-network
+
+networks:
+  erppos-network:
+    driver: bridge
+
+volumes:
+  erppos-postgres-data:
