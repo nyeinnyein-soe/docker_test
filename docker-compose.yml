@@ -17,8 +17,8 @@ services:
       - DB_DATABASE=${DB_DATABASE:-erppos_db}
       - DB_USERNAME=${DB_USERNAME:-erppos_user}
       - DB_PASSWORD=${DB_PASSWORD:-erppos_password}
-      - APP_URL=http://localhost:8000
-      - FRONTEND_URL=http://localhost:5173
+      - APP_URL=http://54.169.134.130:8000
+      - FRONTEND_URL=http://54.169.134.130:5173
     depends_on:
       - db
     networks:
